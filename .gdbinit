@@ -1,4 +1,5 @@
-file target/x86_64-unknown-none/release/ysos_kernel
+file esp/KERNEL.ELF
+gef config context.layout "-legend regs -stack code -args source -threads -trace extra memory"
 gef-remote localhost 1234
 tmux-setup
 b ysos_kernel::init
