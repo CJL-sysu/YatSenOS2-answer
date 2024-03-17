@@ -120,14 +120,14 @@ fn efi_main(image: uefi::Handle, mut system_table: SystemTable<Boot>) -> Status 
 
     // align stack to 8 bytes
     let stacktop = config.kernel_stack_address + config.kernel_stack_size * 0x1000 - 8;
-    //用于让程序在这里暂停，方便调试
-    use core::arch::asm;
-    for _ in 0..0x10000000 {
-            unsafe {
-                asm!("nop");
-            }
-        }
-    //
+    // //用于让程序在这里暂停，方便调试
+    // use core::arch::asm;
+    // for _ in 0..0x10000000 {
+    //         unsafe {
+    //             asm!("nop");
+    //         }
+    //     }
+    // //
     unsafe {
         jump_to_entry(&bootinfo, stacktop);
     }
