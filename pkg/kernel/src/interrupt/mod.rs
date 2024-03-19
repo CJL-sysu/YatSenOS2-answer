@@ -1,7 +1,7 @@
 mod apic;
 mod consts;
-// mod clock;
-// mod serial;
+mod clock;
+mod serial;
 mod exceptions;
 
 use apic::*;
