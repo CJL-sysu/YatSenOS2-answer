@@ -35,7 +35,7 @@ lazy_static! {
             const STACK_SIZE: usize = IST_SIZES[1];
             static mut STACK: [u8; STACK_SIZE] = [0; STACK_SIZE];
             let stack_start = VirtAddr::from_ptr(unsafe { STACK.as_ptr() });
-            let stack_end = stack_start + STACK_SIZE;
+            let stack_end = stack_start + STACK_SIZE as u64;
             info!(
                 "Double Fault Stack: 0x{:016x}-0x{:016x}",
                 stack_start.as_u64(),
@@ -47,7 +47,7 @@ lazy_static! {
             const STACK_SIZE: usize = IST_SIZES[2];
             static mut STACK: [u8; STACK_SIZE] = [0; STACK_SIZE];
             let stack_start = VirtAddr::from_ptr(unsafe { STACK.as_ptr() });
-            let stack_end = stack_start + STACK_SIZE;
+            let stack_end = stack_start + STACK_SIZE as u64;
             info!(
                 "Page Fault Stack  : 0x{:016x}-0x{:016x}",
                 stack_start.as_u64(),
