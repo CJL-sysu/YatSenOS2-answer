@@ -38,7 +38,7 @@ impl LocalApic for XApic {
             .unwrap_or(false)
     }
 
-    /// Initialize the xAPIC for the current CPU.
+    // Initialize the xAPIC for the current CPU.
     fn cpu_init(&mut self) {
         unsafe {
             // FIXME: Enable local APIC; set spurious interrupt vector.
@@ -52,14 +52,14 @@ impl LocalApic for XApic {
             // 设置计时器相关寄存器
             self.write(0x3E0, 0b1011); // set Timer Divide to 1
             self.write(0x380, 0x20000); // set initial count to 0x20000
-            let mut lvt_timer = self.read(0x320);// LVT Timer Register
+            let mut lvt_timer = self.read(0x320); // LVT Timer Register
             // clear and set Vector
             lvt_timer &= !(0xFF);
             lvt_timer |= Interrupts::IrqBase as u32 + Irq::Timer as u32;
             lvt_timer &= !(1 << 16); // clear Mask
             lvt_timer |= 1 << 17; // set Timer Periodic Mode
             self.write(0x320, lvt_timer);
-            
+
             // FIXME: Disable logical interrupt lines (LINT0, LINT1)
             self.write(0x350, 1 << 16); // set Mask， disable LINT0
             self.write(0x360, 1 << 16); // set Mask， disable LINT1
@@ -80,12 +80,21 @@ impl LocalApic for XApic {
             //self.write(0x0B0, 0);
             self.eoi();
             // FIXME: Send an Init Level De-Assert to synchronise arbitration ID's.
-            let mut icr = self.icr();
-            icr |= 2 << 18;
-            icr |= 5 << 8;
-            icr &= !(1 << 14);
-            icr |= 1 << 15;
-            self.set_icr(icr);
+            // let mut icr = self.icr();
+            // icr |= 2 << 18;
+            // icr |= 5 << 8;
+            // icr &= !(1 << 14);
+            // icr |= 1 << 15;
+            // self.set_icr(icr);
+            // #
+            self.write(0x310, 0); // set ICR 0x310
+            const BCAST: u32 = 1 << 19;
+            const INIT: u32 = 5 << 8;
+            const TMLV: u32 = 1 << 15; // TM = 1, LV = 0
+            self.write(0x300, BCAST | INIT | TMLV); // set ICR 0x300
+            const DS: u32 = 1 << 12;
+            while self.read(0x300) & DS != 0 {} // wait for delivery status
+            // #
             // FIXME: Enable interrupts on the APIC (but not on the processor).
             //设置 TPR 寄存器为 0，允许接收中断。
             self.write(0x080, 0);

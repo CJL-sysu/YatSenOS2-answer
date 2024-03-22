@@ -53,7 +53,8 @@ impl SerialPort {
             // If serial is not faulty set it in normal operation mode
             // (not-loopback with IRQs enabled and OUT#1 and OUT#2 bits enabled)
             self.modem_control.write(0x0f);
-
+            // Enable interrupts
+            self.interrupt_enable.write(0x01);
         }
     }
 
@@ -70,7 +71,7 @@ impl SerialPort {
     pub fn receive(&mut self) -> Option<u8> {
         // FIXME: Receive a byte on the serial port no wait
         unsafe{
-            if self.line_status.read() & 1 ==0{
+            if self.line_status.read() & 1 !=0{
                 Some(self.data.read())
             }else{
                 None

@@ -1,6 +1,6 @@
 mod apic;
 mod consts;
-mod clock;
+pub mod clock;
 mod serial;
 mod exceptions;
 
@@ -14,7 +14,7 @@ lazy_static! {
         unsafe {
             exceptions::register_idt(&mut idt);
             clock::register_idt(&mut idt);
-            // TODO: serial::register_idt(&mut idt);
+            serial::register_idt(&mut idt);
         }
         idt
     };
@@ -33,7 +33,9 @@ pub fn init() {
     xapic.cpu_init();
 
     // FIXME: enable serial irq with IO APIC (use enable_irq)
-
+    enable_irq(consts::Irq::Serial0 as u8 , 0);
+    //enable_irq(consts::Irq::Keyboard as u8 + consts::Interrupts::IrqBase as u8, 0);
+    //enable_irq(consts::Irq::Serial1 as u8 + consts::Interrupts::IrqBase as u8, 0);
     info!("Interrupts Initialized.");
 }
 
