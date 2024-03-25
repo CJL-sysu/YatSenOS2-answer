@@ -41,6 +41,8 @@ fn receive() {
                     let ch = s.chars().next().unwrap();
                     push_key(DecodedKey::Unicode(ch));
                     input_buffer.clear();
+                }else if input_buffer.len() >= INPUT_BUFFER_SIZE{
+                    input_buffer.clear();
                 }
             },
             _ => {
