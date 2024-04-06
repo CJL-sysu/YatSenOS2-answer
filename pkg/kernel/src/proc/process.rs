@@ -1,12 +1,12 @@
 use super::*;
 use crate::memory::*;
-use alloc::sync::Weak;
+use alloc::sync::{Arc, Weak};
 use alloc::vec::Vec;
 use spin::*;
 use x86_64::structures::paging::mapper::MapToError;
 use x86_64::structures::paging::page::PageRange;
 use x86_64::structures::paging::*;
-
+use elf::*;
 #[derive(Clone)]
 pub struct Process {
     pid: ProcessId,
@@ -88,8 +88,13 @@ impl Process {
 
     pub fn alloc_init_stack(&self) -> VirtAddr {
         // FIXME: alloc init stack base on self pid
-
-        VirtAddr::new(0)
+        let stack_top:u64 = 0x400000000000 - (self.pid().0 as u64 - 1)*0x100000000;
+        let stack_bottom:u64 = 0x400000000000 - (self.pid().0 as u64)*0x100000000;
+        let stack_size: u64 = 0x100000;
+        let page_table = &mut self.inner.read().page_table.as_ref().unwrap().mapper();
+        let frame_allocator = &mut *get_frame_alloc_for_sure();
+        map_range(stack_bottom as u64, stack_size as u64, page_table, frame_allocator);
+        VirtAddr::new(stack_top as u64)
     }
 }
 
@@ -130,14 +135,20 @@ impl ProcessInner {
     /// mark the process as ready
     pub(super) fn save(&mut self, context: &ProcessContext) {
         // FIXME: save the process's context
+
+        self.context.save(context);
+        self.pause();
     }
 
     /// Restore the process's context
     /// mark the process as running
     pub(super) fn restore(&mut self, context: &mut ProcessContext) {
+        
         // FIXME: restore the process's context
-
+        self.context.restore(context);
         // FIXME: restore the process's page table
+        self.page_table.as_ref().unwrap().load();
+        self.resume();
     }
 
     pub fn parent(&self) -> Option<Arc<Process>> {
@@ -150,6 +161,9 @@ impl ProcessInner {
         // FIXME: set status to dead
 
         // FIXME: take and drop unused resources
+    }
+    pub fn set_stack_frame(&mut self, entry: VirtAddr, stack_top: VirtAddr){
+        self.context.init_stack_frame(entry, stack_top);
     }
 }
 

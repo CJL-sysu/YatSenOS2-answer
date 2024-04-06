@@ -20,6 +20,7 @@ extern crate libm;
 
 #[macro_use]
 pub mod utils;
+pub mod proc;
 pub use utils::*;
 
 #[macro_use]
@@ -38,6 +39,7 @@ pub fn init(boot_info: &'static BootInfo) {
     memory::address::init(boot_info);
     memory::gdt::init(); // init gdt
     memory::allocator::init(); // init kernel heap allocator
+    proc::init(); // init process manager
     interrupt::init(); // init interrupts
     memory::init(boot_info); // init memory manager
 
@@ -55,5 +57,20 @@ pub fn shutdown(boot_info: &'static BootInfo) -> ! {
             boot::UefiStatus::SUCCESS,
             None,
         );
+    }
+}
+pub fn humanized_size(size: u64) -> (f64, &'static str) {
+    let mut f: f64 = size as f64;
+    if size < 1024 {
+        (f, "B")
+    } else if size < 1024 * 1024 {
+        f /= 1024.0;
+        (f, "KiB")
+    } else if size < 1024 * 1024 * 1024 {
+        f /= 1024.0 * 1024.0;
+        (f, "MiB")
+    } else {
+        f /= 1024.0 * 1024.0 * 1024.0;
+        (f, "GiB")
     }
 }

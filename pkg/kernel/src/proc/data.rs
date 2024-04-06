@@ -45,5 +45,15 @@ impl ProcessData {
 
     pub fn is_on_stack(&self, addr: VirtAddr) -> bool {
         // FIXME: check if the address is on the stack
+        match self.stack_segment{
+            Some(range) => {
+                let addr = addr.as_u64();
+                let start = range.start.start_address().as_u64();
+                let end = range.end.start_address().as_u64();
+                //注意左开右闭
+                start <= addr && addr < end
+            },
+            None => false
+        }
     }
 }
