@@ -88,9 +88,12 @@ impl Process {
 
     pub fn alloc_init_stack(&self) -> VirtAddr {
         // FIXME: alloc init stack base on self pid
-        let stack_top:u64 = 0x400000000000 - (self.pid().0 as u64 - 1)*0x100000000;
-        let stack_bottom:u64 = 0x400000000000 - (self.pid().0 as u64)*0x100000000;
-        let stack_size: u64 = 0x100000;
+        // let stack_top:u64 = 0x400000000000 - (self.pid().0 as u64 - 1)*0x100000000;
+        // let stack_bottom:u64 = 0x400000000000 - (self.pid().0 as u64)*0x100000000;
+        // let stack_size: u64 = 0x100000;
+        let stack_bottom: u64 = STACK_INIT_BOT - (self.pid().0 as u64 - 1)*0x100000000;
+        let stack_top: u64 = STACK_INIT_TOP - (self.pid().0 as u64 - 1)*0x100000000;
+        let stack_size: u64 = 1;
         let page_table = &mut self.inner.read().page_table.as_ref().unwrap().mapper();
         let frame_allocator = &mut *get_frame_alloc_for_sure();
         map_range(stack_bottom as u64, stack_size as u64, page_table, frame_allocator);

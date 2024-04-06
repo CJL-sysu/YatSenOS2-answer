@@ -89,21 +89,23 @@ fn efi_main(image: uefi::Handle, mut system_table: SystemTable<Boot>) -> Status 
     // FIXME: load and map the kernel elf file
     load_elf(&elf, config.physical_memory_offset, &mut page_table, &mut frame_allocator).unwrap();
     // FIXME: map kernel stack
-    let _page_range = map_range(
-        config.kernel_stack_address,
-        match config.kernel_stack_auto_grow{
-            0 => config.kernel_stack_size,
-            _ => config.kernel_stack_auto_grow / 4096,
-        },
-        &mut page_table, &mut frame_allocator).unwrap();
-    debug!(
+    let (stack_start, stack_size) = if config.kernel_stack_auto_grow > 0 {
+        let stack_start = config.kernel_stack_address
+            + (config.kernel_stack_size - config.kernel_stack_auto_grow) * 0x1000;
+        (stack_start, config.kernel_stack_auto_grow)
+    } else {
+        (config.kernel_stack_address, config.kernel_stack_size)
+    };
+
+    info!(
         "Kernel init stack: [0x{:x?} -> 0x{:x?})",
-        config.kernel_stack_address,
-        config.kernel_stack_address + match config.kernel_stack_auto_grow{
-            0 => config.kernel_stack_size,
-            _ => config.kernel_stack_auto_grow / 4096,
-        } * 0x1000
+        stack_start,
+        stack_start + stack_size * 0x1000
     );
+    map_range(
+        stack_start,
+        stack_size,
+        &mut page_table, &mut frame_allocator);
     // FIXME: recover write protect (Cr0)
     unsafe {
         //WRITE_PROTECT: When set, it is not possible to write to read-only pages from ring 0.
