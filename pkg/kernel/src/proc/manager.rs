@@ -46,19 +46,21 @@ impl ProcessManager {
         }
     }
     pub fn get_exit_code(&self, pid: &ProcessId) -> Option<i32> {
-        match self.get_proc(&pid){
-            Some(proc) => {
-                match proc.read().exit_code(){
-                    Some(code) => {
-                        Some(code as i32)
-                    },
-                    None => {
-                        None
+        x86_64::instructions::interrupts::without_interrupts(|| { //这里必须使用without_interrupts,防止出现死锁(折磨了CJL一下午)
+            match self.get_proc(&pid){
+                Some(proc) => {
+                    match proc.read().exit_code(){
+                        Some(code) => {
+                            Some(code as i32)
+                        },
+                        None => {
+                            None
+                        }
                     }
-                }
-            },
-            None => None
-        }
+                },
+                None => None
+            }
+        })
     }
     #[inline]
     pub fn push_ready(&self, pid: ProcessId) {
@@ -139,8 +141,19 @@ impl ProcessManager {
 
     pub fn handle_page_fault(&self, addr: VirtAddr, err_code: PageFaultErrorCode) -> bool {
         // FIXME: handle page fault
-
-        false
+        if err_code.contains(PageFaultErrorCode::PROTECTION_VIOLATION){
+            info!("PROTECTION_VIOLATION caused page fault");
+            false
+        }else{
+            let proc = self.current();
+            if proc.read().is_on_max_stack(addr){
+                proc.write().inc_stack_space(addr);
+                true
+            }else{
+                info!("the addr {:#?} is not in the stack of current process", addr);
+                false
+            }
+        }
     }
 
     pub fn kill(&self, pid: ProcessId, ret: isize) {

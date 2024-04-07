@@ -93,10 +93,14 @@ impl Process {
         // let stack_size: u64 = 0x100000;
         let stack_bottom: u64 = STACK_INIT_BOT - (self.pid().0 as u64 - 1)*0x100000000;
         let stack_top: u64 = STACK_INIT_TOP - (self.pid().0 as u64 - 1)*0x100000000;
+        let max_stack_bottom: u64 = STACK_MAX - (self.pid().0 as u64)*0x100000000;
+        let max_stack_size: u64 = STACK_MAX_PAGES;
         let stack_size: u64 = 1;
         let page_table = &mut self.inner.read().page_table.as_ref().unwrap().mapper();
         let frame_allocator = &mut *get_frame_alloc_for_sure();
-        map_range(stack_bottom as u64, stack_size as u64, page_table, frame_allocator);
+        map_range(stack_bottom as u64, stack_size as u64, page_table, frame_allocator).unwrap();
+        self.inner.write().proc_data.as_mut().unwrap().set_stack(VirtAddr::new(stack_top), stack_size);
+        self.inner.write().proc_data.as_mut().unwrap().set_max_stack(VirtAddr::new(max_stack_bottom), max_stack_size);
         VirtAddr::new(stack_top as u64)
     }
 }
@@ -138,7 +142,9 @@ impl ProcessInner {
     /// mark the process as ready
     pub(super) fn save(&mut self, context: &ProcessContext) {
         // FIXME: save the process's context
-
+        if self.status != ProgramStatus::Running && self.status != ProgramStatus::Ready{
+            return;
+        }
         self.context.save(context);
         self.pause();
     }
@@ -160,13 +166,37 @@ impl ProcessInner {
 
     pub fn kill(&mut self, ret: isize) {
         // FIXME: set exit code
-
+        self.exit_code = Some(ret);
         // FIXME: set status to dead
-
+        self.status = ProgramStatus::Dead;
+        // info!("{:?}",self.status);
         // FIXME: take and drop unused resources
+        self.proc_data.take();
+        self.page_table.take();
     }
     pub fn set_stack_frame(&mut self, entry: VirtAddr, stack_top: VirtAddr){
         self.context.init_stack_frame(entry, stack_top);
+    }
+
+    pub fn inc_stack_space(&mut self, addr: VirtAddr){
+        // 分配新的页面
+        let old_page_range = self.proc_data.as_ref()
+            .expect("Failed to get proc_data")
+            .stack_segment
+            .expect("Failed to get page range");
+        let old_start_page = old_page_range.start;
+        let old_end_page = old_page_range.end;
+
+        let cur_start_page = Page::<Size4KiB>::containing_address(addr);
+        let stack_size = old_start_page - cur_start_page;
+        let page_table = &mut self.page_table.as_ref().unwrap().mapper();
+        let frame_allocator = &mut *get_frame_alloc_for_sure();
+        map_range(addr.as_u64() as u64, stack_size as u64, page_table, frame_allocator).unwrap();
+        // 更新页表
+        self.page_table.as_ref().unwrap().load();
+        // 更新进程数据中的栈信息
+        self.proc_data.as_mut().unwrap().set_stack(addr, old_end_page - cur_start_page);
+        trace!("increase stack space successfully");
     }
 }
 
