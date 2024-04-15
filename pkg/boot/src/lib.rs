@@ -27,6 +27,21 @@ extern crate log;
 
 pub type MemoryMap = ArrayVec<MemoryDescriptor, 256>;
 
+use arrayvec::ArrayString;
+use xmas_elf::ElfFile;
+const MAX_APPLIST_LENGTH:usize = 16;
+/// App information
+pub struct App<'a> {
+    /// The name of app
+    pub name: ArrayString<MAX_APPLIST_LENGTH>,
+    /// The ELF file
+    pub elf: ElfFile<'a>,
+}
+
+pub type AppList = ArrayVec<App<'static>, MAX_APPLIST_LENGTH>;
+//pub type AppListRef = Option<&'static[App<'static>]>;
+pub type AppListRef = Option<&'static ArrayVec<App<'static>, MAX_APPLIST_LENGTH>>;
+// pub type AppListRef<'a> = Option<&'a ArrayVec<App<'static>,MAX_APPLIST_LENGTH>>;
 /// This structure represents the information that the bootloader passes to the kernel.
 pub struct BootInfo {
     /// The memory map
@@ -37,6 +52,8 @@ pub struct BootInfo {
 
     /// UEFI SystemTable
     pub system_table: SystemTable<Runtime>,
+    // Loaded apps
+    pub loaded_apps: Option<AppList>,
 }
 
 /// Get current page table from CR3

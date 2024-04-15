@@ -6,6 +6,7 @@ mod pid;
 mod process;
 mod processor;
 
+use alloc::vec::Vec;
 pub use manager::*;
 use process::*;
 use x86_64::structures::paging::PageTable;
@@ -53,7 +54,7 @@ pub enum ProgramStatus {
 }
 
 /// init process manager
-pub fn init() {
+pub fn init(boot_info: &'static boot::BootInfo) {
     let mut kproc_data = ProcessData::new();
 
     // FIXME: set the kernel stack
@@ -67,7 +68,8 @@ pub fn init() {
         PageTableContext::new(),
         Some(kproc_data),
     );
-    manager::init(kproc);
+    let app_list = boot_info.loaded_apps.as_ref();
+    manager::init(kproc, app_list);
 
     info!("Process Manager Initialized.");
 }
@@ -119,4 +121,24 @@ pub fn handle_page_fault(addr: VirtAddr, err_code: PageFaultErrorCode) -> bool {
     x86_64::instructions::interrupts::without_interrupts(|| {
         get_process_manager().handle_page_fault(addr, err_code)
     })
+}
+pub fn list_app() {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let app_list = get_process_manager().app_list();
+        if app_list.is_none() {
+            println!("[!] No app found in list!");
+            return;
+        }
+
+        let apps = app_list
+            .unwrap()
+            .iter()
+            .map(|app| app.name.as_str())
+            .collect::<Vec<&str>>()
+            .join(", ");
+
+        // TODO: print more information like size, entry point, etc.
+
+        println!("[+] App list: {}", apps);
+    });
 }
