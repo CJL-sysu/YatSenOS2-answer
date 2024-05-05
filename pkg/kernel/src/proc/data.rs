@@ -4,6 +4,7 @@ use x86_64::structures::paging::{
     page::{PageRange, PageRangeInclusive},
     Page,
 };
+use crate::resource::ResourceSet;
 
 use super::*;
 
@@ -14,7 +15,8 @@ pub struct ProcessData {
 
     // process specific data
     pub(super) stack_segment: Option<PageRange>,
-    pub(super) max_stack_segment: Option<PageRange>
+    pub(super) max_stack_segment: Option<PageRange>,
+    pub(super) resources: Arc<RwLock<ResourceSet>>
 }
 
 impl Default for ProcessData {
@@ -23,6 +25,7 @@ impl Default for ProcessData {
             env: Arc::new(RwLock::new(BTreeMap::new())),
             stack_segment: None,
             max_stack_segment: None,
+            resources: Arc::new(RwLock::new(ResourceSet::default())),
         }
     }
 }
@@ -43,6 +46,7 @@ impl ProcessData {
     pub fn set_stack(&mut self, start: VirtAddr, size: u64) {
         let start = Page::containing_address(start);
         self.stack_segment = Some(Page::range(start, start + size));
+        //info!("stack segment: {:?}", self.stack_segment);
         let start_u64 = Page::range(start, start + size).start.start_address().as_u64();
         let end_u64 = Page::range(start, start + size).end.start_address().as_u64();
         trace!("set stack: [{:#x} , {:#x})", start_u64, end_u64);
@@ -81,5 +85,12 @@ impl ProcessData {
             },
             None => false
         }
+    }
+    pub fn read(&self, fd: u8, buf: &mut [u8]) -> isize {
+        self.resources.read().read(fd, buf)
+    }
+
+    pub fn write(&self, fd: u8, buf: &[u8]) -> isize {
+        self.resources.write().write(fd, buf)
     }
 }

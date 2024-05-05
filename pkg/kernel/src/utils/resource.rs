@@ -1,4 +1,8 @@
-use alloc::string::String;
+use alloc::{collections::BTreeMap, string::String};
+use pc_keyboard::DecodedKey;
+use spin::Mutex;
+
+use crate::input::try_pop_key;
 
 #[derive(Debug, Clone)]
 pub enum StdIO {
@@ -41,6 +45,7 @@ impl ResourceSet {
         if let Some(count) = self.handles.get(&fd).and_then(|h| h.lock().read(buf)) {
             count as isize
         } else {
+            //error!("return -1");
             -1
         }
     }
@@ -49,6 +54,7 @@ impl ResourceSet {
         if let Some(count) = self.handles.get(&fd).and_then(|h| h.lock().write(buf)) {
             count as isize
         } else {
+            error!("return -1");
             -1
         }
     }
@@ -66,7 +72,28 @@ impl Resource {
             Resource::Console(stdio) => match stdio {
                 StdIO::Stdin => {
                     // FIXME: just read from kernel input buffer
-                    Some(0)
+                    if buf.len() < 4{
+                        error!("buf length should >= 4");
+                        Some(0)
+                    }
+                    else{
+                        let k = try_pop_key();
+                        match k{
+                            None => Some(0),
+                            Some(k) => {
+                                match k{
+                                    DecodedKey::RawKey(r) =>{
+                                        warn!("Rawkey {:#?} is not supported",r);
+                                        Some(0)
+                                    }
+                                    DecodedKey::Unicode(c) => {
+                                        Some(c.encode_utf8(&mut buf[0..4]).len())
+                                    }
+                                }
+                            },
+                        }
+                    }
+                    
                 }
                 _ => None,
             },

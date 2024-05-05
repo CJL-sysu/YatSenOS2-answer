@@ -396,8 +396,10 @@ dependencies = [
  "volatile 0.5.2",
  "x86",
  "x86_64",
+ "xmas-elf",
  "ysos_boot",
  "ysos_elf",
+ "ysos_syscall",
 ]
 
 [[package]]

@@ -85,24 +85,26 @@ impl Process {
 
         inner.kill(ret);
     }
-
-    pub fn alloc_init_stack(&self) -> VirtAddr {
-        // FIXME: alloc init stack base on self pid
-        // let stack_top:u64 = 0x400000000000 - (self.pid().0 as u64 - 1)*0x100000000;
-        // let stack_bottom:u64 = 0x400000000000 - (self.pid().0 as u64)*0x100000000;
-        // let stack_size: u64 = 0x100000;
-        let stack_bottom: u64 = STACK_INIT_BOT - (self.pid().0 as u64 - 1)*0x100000000;
-        let stack_top: u64 = STACK_INIT_TOP - (self.pid().0 as u64 - 1)*0x100000000;
-        let max_stack_bottom: u64 = STACK_MAX - (self.pid().0 as u64)*0x100000000;
-        let max_stack_size: u64 = STACK_MAX_PAGES;
-        let stack_size: u64 = 1;
-        let page_table = &mut self.inner.read().page_table.as_ref().unwrap().mapper();
-        let frame_allocator = &mut *get_frame_alloc_for_sure();
-        map_range(stack_bottom as u64, stack_size as u64, page_table, frame_allocator).unwrap();
-        self.inner.write().proc_data.as_mut().unwrap().set_stack(VirtAddr::new(stack_top), stack_size);
-        self.inner.write().proc_data.as_mut().unwrap().set_max_stack(VirtAddr::new(max_stack_bottom), max_stack_size);
-        VirtAddr::new(stack_top as u64)
-    }
+    // // from lab4, delete in lab5
+    //
+    // pub fn alloc_init_stack(&self) -> VirtAddr {
+    //     // FIXME: alloc init stack base on self pid
+    //     // let stack_top:u64 = 0x400000000000 - (self.pid().0 as u64 - 1)*0x100000000;
+    //     // let stack_bottom:u64 = 0x400000000000 - (self.pid().0 as u64)*0x100000000;
+    //     // let stack_size: u64 = 0x100000;
+    //     let stack_bottom: u64 = STACK_INIT_BOT - (self.pid().0 as u64 - 1)*0x100000000;
+    //     let stack_top: u64 = STACK_INIT_TOP - (self.pid().0 as u64 - 1)*0x100000000;
+    //     let max_stack_bottom: u64 = STACK_MAX - (self.pid().0 as u64)*0x100000000;
+    //     let max_stack_size: u64 = STACK_MAX_PAGES;
+    //     let stack_size: u64 = 1;
+    //     let page_table = &mut self.inner.read().page_table.as_ref().unwrap().mapper();
+    //     let frame_allocator = &mut *get_frame_alloc_for_sure();
+    //     map_range(stack_bottom as u64, stack_size as u64, page_table, frame_allocator).unwrap();
+    //     self.inner.write().proc_data.as_mut().unwrap().set_stack(VirtAddr::new(stack_top), stack_size);
+    //     self.inner.write().proc_data.as_mut().unwrap().set_max_stack(VirtAddr::new(max_stack_bottom), max_stack_size);
+    //     VirtAddr::new(stack_top as u64)
+    // }
+    // 
 }
 
 impl ProcessInner {
@@ -191,12 +193,27 @@ impl ProcessInner {
         let stack_size = old_start_page - cur_start_page;
         let page_table = &mut self.page_table.as_ref().unwrap().mapper();
         let frame_allocator = &mut *get_frame_alloc_for_sure();
-        map_range(addr.as_u64() as u64, stack_size as u64, page_table, frame_allocator).unwrap();
+        map_range(addr.as_u64() as u64, stack_size as u64, page_table, frame_allocator, false, false).unwrap();
         // 更新页表
         self.page_table.as_ref().unwrap().load();
         // 更新进程数据中的栈信息
         self.proc_data.as_mut().unwrap().set_stack(addr, old_end_page - cur_start_page);
         trace!("increase stack space successfully");
+    }
+
+    pub fn load_elf(&mut self, elf:&ElfFile, mut mapper: x86_64::structures::paging::OffsetPageTable<'static>){
+        let alloc = &mut *get_frame_alloc_for_sure();
+        elf::load_elf(
+            elf, 
+            *PHYSICAL_OFFSET.get().unwrap(), 
+            &mut mapper, 
+            alloc, 
+            true
+        ).unwrap();
+        let stack_segment = elf::map_range(STACK_INIT_BOT, STACK_DEF_PAGE, &mut mapper, alloc, true, false).unwrap();
+        //info!("stack segment: {:?}", stack_segment);
+        self.proc_data.as_mut().unwrap().set_stack(VirtAddr::new(STACK_INIT_TOP), STACK_DEF_PAGE);
+        self.proc_data.as_mut().unwrap().set_max_stack(VirtAddr::new(STACK_MAX - STACK_MAX_SIZE), STACK_MAX_PAGES);
     }
 }
 

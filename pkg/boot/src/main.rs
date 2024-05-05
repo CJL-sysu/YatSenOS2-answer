@@ -87,7 +87,7 @@ fn efi_main(image: uefi::Handle, mut system_table: SystemTable<Boot>) -> Status 
     let mut frame_allocator = UEFIFrameAllocator(bs);
     map_physical_memory(config.physical_memory_offset, max_phys_addr, &mut page_table, &mut frame_allocator);
     // FIXME: load and map the kernel elf file
-    load_elf(&elf, config.physical_memory_offset, &mut page_table, &mut frame_allocator).unwrap();
+    load_elf(&elf, config.physical_memory_offset, &mut page_table, &mut frame_allocator, false).unwrap();
     // FIXME: map kernel stack
     let (stack_start, stack_size) = if config.kernel_stack_auto_grow > 0 {
         let stack_start = config.kernel_stack_address
@@ -105,7 +105,7 @@ fn efi_main(image: uefi::Handle, mut system_table: SystemTable<Boot>) -> Status 
     map_range(
         stack_start,
         stack_size,
-        &mut page_table, &mut frame_allocator);
+        &mut page_table, &mut frame_allocator, false, false);
     // FIXME: recover write protect (Cr0)
     unsafe {
         //WRITE_PROTECT: When set, it is not possible to write to read-only pages from ring 0.

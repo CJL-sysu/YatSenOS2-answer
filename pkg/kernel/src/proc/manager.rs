@@ -1,12 +1,12 @@
 use self::processor::set_pid;
-use crate::proc::context::*;
+use crate::{memory::PHYSICAL_OFFSET, proc::context::*};
 use super::*;
 use crate::memory::{
     self,
     allocator::{ALLOCATOR, HEAP_SIZE},
     get_frame_alloc_for_sure, PAGE_SIZE,
 };
-use alloc::{collections::*, format, sync::Arc};
+use alloc::{boxed::Box, collections::*, format, sync::{Arc, Weak}};
 use boot::{AppList, AppListRef};
 use spin::{Mutex, RwLock, RwLockWriteGuard};
 
@@ -117,29 +117,29 @@ impl ProcessManager {
             }
         }
     }
-
-    pub fn spawn_kernel_thread(
-        &self,
-        entry: VirtAddr,
-        name: String,
-        proc_data: Option<ProcessData>,
-    ) -> ProcessId {
-        let kproc = self.get_proc(&KERNEL_PID).unwrap();
-        let page_table = kproc.read().clone_page_table();
-        let proc = Process::new(name, Some(Arc::downgrade(&kproc)), page_table, proc_data);
-        let pid = proc.pid();
-        // alloc stack for the new process base on pid
-        let stack_top = proc.alloc_init_stack();
-        proc.write().pause();
-        // FIXME: set the stack frame
-        proc.write().set_stack_frame(entry, stack_top);
-        // FIXME: add to process map
-        self.add_proc(pid, proc);
-        // FIXME: push to ready queue
-        self.push_ready(pid);
-        // FIXME: return new process pid
-        pid
-    }
+    // //from lab4, delete here in lab5
+    // pub fn spawn_kernel_thread(
+    //     &self,
+    //     entry: VirtAddr,
+    //     name: String,
+    //     proc_data: Option<ProcessData>,
+    // ) -> ProcessId {
+    //     let kproc = self.get_proc(&KERNEL_PID).unwrap();
+    //     let page_table = kproc.read().clone_page_table();
+    //     let proc = Process::new(name, Some(Arc::downgrade(&kproc)), page_table, proc_data);
+    //     let pid = proc.pid();
+    //     // alloc stack for the new process base on pid
+    //     let stack_top = proc.alloc_init_stack();
+    //     proc.write().pause();
+    //     // FIXME: set the stack frame
+    //     proc.write().set_stack_frame(entry, stack_top);
+    //     // FIXME: add to process map
+    //     self.add_proc(pid, proc);
+    //     // FIXME: push to ready queue
+    //     self.push_ready(pid);
+    //     // FIXME: return new process pid
+    //     pid
+    // }
 
     pub fn kill_current(&self, ret: isize) {
         self.kill(processor::get_pid(), ret);
@@ -160,6 +160,10 @@ impl ProcessManager {
                 false
             }
         }
+    }
+    
+    pub fn kill_self(&self, ret: isize) {
+        self.kill(processor::get_pid(), ret);
     }
 
     pub fn kill(&self, pid: ProcessId, ret: isize) {
@@ -198,5 +202,35 @@ impl ProcessManager {
         output += &processor::print_processors();
 
         print!("{}", output);
+    }
+    pub fn spawn(
+        &self,
+        elf: &ElfFile,
+        name: String,
+        parent: Option<Weak<Process>>,
+        proc_data: Option<ProcessData>,
+    ) -> ProcessId {
+        let kproc = self.get_proc(&KERNEL_PID).unwrap();
+        let page_table = kproc.read().clone_page_table();
+        let page_table_mapper: x86_64::structures::paging::OffsetPageTable<'static> = page_table.mapper();
+        let proc = Process::new(name, parent, page_table, proc_data);
+        let pid = proc.pid();
+
+        let mut inner = proc.write();
+        // FIXME: load elf to process pagetable
+        inner.load_elf(elf, page_table_mapper);
+        // FIXME: alloc new stack for process
+        
+        inner.set_stack_frame(VirtAddr::new_truncate(elf.header.pt2.entry_point()), VirtAddr::new_truncate(STACK_INIT_TOP));
+        // FIXME: mark process as ready
+        inner.pause();
+        drop(inner);
+
+        trace!("New {:#?}", &proc);
+
+        // FIXME: something like kernel thread
+        self.add_proc(pid, proc);
+        self.push_ready(pid);
+        pid
     }
 }
