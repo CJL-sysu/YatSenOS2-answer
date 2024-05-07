@@ -193,7 +193,7 @@ impl ProcessInner {
         let stack_size = old_start_page - cur_start_page;
         let page_table = &mut self.page_table.as_ref().unwrap().mapper();
         let frame_allocator = &mut *get_frame_alloc_for_sure();
-        map_range(addr.as_u64() as u64, stack_size as u64, page_table, frame_allocator, false, false).unwrap();
+        map_range(addr.as_u64() as u64, stack_size as u64, page_table, frame_allocator, true, false).unwrap();
         // 更新页表
         self.page_table.as_ref().unwrap().load();
         // 更新进程数据中的栈信息
@@ -211,6 +211,7 @@ impl ProcessInner {
             true
         ).unwrap();
         let stack_segment = elf::map_range(STACK_INIT_BOT, STACK_DEF_PAGE, &mut mapper, alloc, true, false).unwrap();
+
         //info!("stack segment: {:?}", stack_segment);
         self.proc_data.as_mut().unwrap().set_stack(VirtAddr::new(STACK_INIT_TOP), STACK_DEF_PAGE);
         self.proc_data.as_mut().unwrap().set_max_stack(VirtAddr::new(STACK_MAX - STACK_MAX_SIZE), STACK_MAX_PAGES);

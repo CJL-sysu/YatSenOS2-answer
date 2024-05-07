@@ -13,8 +13,20 @@ pub fn spawn_process(args: &SyscallArgs) -> usize {
     // FIXME: spawn the process by name
     // FIXME: handle spawn error, return 0 if failed
     // FIXME: return pid as usize
-
-    0
+    let buf: &[u8];
+    unsafe{
+        buf = core::slice::from_raw_parts(args.arg0 as *const u8, args.arg1 as usize);
+    }
+    let name;
+    unsafe {
+        name = core::str::from_utf8_unchecked(buf);
+    };
+    //debug!("name is {}",name);
+    let res = proc::spawn(name);
+    match res {
+        Some(pid) => pid.0 as usize,
+        None => 0,
+    }
 }
 
 pub fn sys_write(args: &SyscallArgs) -> usize {//arg0区分标准输出和错误输出，arg1为指针，arg2为字符串长度
@@ -92,6 +104,10 @@ pub fn get_pid() -> u16{
 pub fn service_list_app(){
     proc::list_app();
 }
-pub fn wait_pid(args: &SyscallArgs){
-    get_process_manager().get_exit_code(&ProcessId(args.arg0 as u16));
+pub fn wait_pid(args: &SyscallArgs)->usize{
+    let res = get_process_manager().get_exit_code(&ProcessId(args.arg0 as u16));
+    match res {
+        Some(code) => code as usize,
+        None => 114514,
+    }
 }

@@ -19,7 +19,7 @@ impl Stdin {
         //s = sys_read(1, buf);
         //       - maybe char by char?
         loop{
-            match sys_read(1, &mut buf){
+            match sys_read(0, &mut buf){
                 Some(n)=>{
                     if n > 0{
                         let ch = String::from_utf8_lossy(&buf).to_string().remove(0);
@@ -40,6 +40,7 @@ impl Stdin {
                                 }
                             },
                             _ => {
+                                self::print!("{}", ch);
                                 s.push(ch);
                             }
                         }

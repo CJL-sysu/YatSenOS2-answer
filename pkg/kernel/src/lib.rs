@@ -74,3 +74,13 @@ pub fn humanized_size(size: u64) -> (f64, &'static str) {
         (f, "GiB")
     }
 }
+pub fn wait(init: proc::ProcessId) {
+    loop {
+        if proc::still_alive(init) {
+            // Why? Check reflection question 5
+            x86_64::instructions::hlt();
+        } else {
+            break;
+        }
+    }
+}

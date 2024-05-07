@@ -73,7 +73,7 @@ pub fn dispatcher(context: &mut ProcessContext) {
         },
         // pid: arg0 as u16 -> status: isize
         Syscall::WaitPid => { /* FIXME: check if the process is running or get retcode */
-            
+            context.set_rax(wait_pid(&args))
         },
 
         // None
