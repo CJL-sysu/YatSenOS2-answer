@@ -1,5 +1,6 @@
 use core::alloc::Layout;
 
+use crate::interrupt::clock;
 use crate::proc;
 use crate::proc::*;
 use crate::utils::*;
@@ -110,4 +111,7 @@ pub fn wait_pid(args: &SyscallArgs)->usize{
         Some(code) => code as usize,
         None => 114514,
     }
+}
+pub fn sys_clock() -> i64{
+    clock::now().timestamp_nanos_opt().unwrap_or_default()
 }

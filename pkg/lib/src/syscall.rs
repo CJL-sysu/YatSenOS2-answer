@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use syscall_def::Syscall;
 
 #[inline(always)]
@@ -79,4 +80,10 @@ pub fn sys_get_pid() -> u16 {
 pub fn sys_exit(code: isize) -> ! {
     syscall!(Syscall::Exit, code as u64);
     unreachable!("This process should be terminated by now.")
+}
+#[inline(always)]
+pub fn sys_time() -> NaiveDateTime {
+    let time = syscall!(Syscall::Time) as i64;
+    const BILLION: i64 = 1_000_000_000;
+    NaiveDateTime::from_timestamp_opt(time / BILLION, (time % BILLION) as u32).unwrap_or_default()
 }

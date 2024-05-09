@@ -22,3 +22,4 @@ volatile = "0.5"
 elf = { package = "ysos_elf", path = "../elf"}
 xmas-elf = "0.9"
 syscall_def = {package = "ysos_syscall", path = "../syscall"}
+chrono = { version = "0.4", default-features = false }

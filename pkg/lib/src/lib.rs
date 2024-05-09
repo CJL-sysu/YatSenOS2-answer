@@ -17,6 +17,7 @@ pub extern crate alloc;
 mod syscall;
 
 use core::fmt::*;
+use chrono::Duration;
 
 pub use alloc::*;
 pub use io::*;
@@ -52,4 +53,12 @@ pub fn _print(args: Arguments) {
 #[doc(hidden)]
 pub fn _err(args: Arguments) {
     stderr().write(format!("{}", args).as_str());
+}
+pub fn sleep(millisecs: i64) {
+    let start = sys_time();
+    let dur = Duration::milliseconds(millisecs);
+    let mut current = start;
+    while current - start < dur {
+        current = sys_time();
+    }
 }

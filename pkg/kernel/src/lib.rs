@@ -33,12 +33,15 @@ pub mod interrupt;
 pub use alloc::format;
 use boot::BootInfo;
 
+use crate::interrupt::clock;
+
 pub fn init(boot_info: &'static BootInfo) {
     serial::init(); // init serial output
     logger::init(); // init logger system
     memory::address::init(boot_info);
     memory::gdt::init(); // init gdt
     memory::allocator::init(); // init kernel heap allocator
+    clock::init(boot_info);
     proc::init(boot_info); // init process manager
     interrupt::init(); // init interrupts
     memory::init(boot_info); // init memory manager
