@@ -1,5 +1,5 @@
 use self::processor::set_pid;
-use crate::{memory::PHYSICAL_OFFSET, proc::context::*};
+use crate::{memory::{user::{USER_ALLOCATOR, USER_HEAP_SIZE}, PHYSICAL_OFFSET}, proc::context::*};
 use super::*;
 use crate::memory::{
     self,
@@ -196,7 +196,65 @@ impl ProcessManager {
             .for_each(|p| output += format!("{}\n", p).as_str());
 
         // TODO: print memory usage of kernel heap
+        let heap_used = ALLOCATOR.lock().used();
+        let heap_size = HEAP_SIZE;
 
+        let user_heap_used = USER_ALLOCATOR.lock().used();
+        let user_heap_size = USER_HEAP_SIZE;
+
+        let alloc = get_frame_alloc_for_sure();
+        let frames_used = alloc.frames_used();
+        let frames_recycled = alloc.recycled_count();
+        let frames_total = alloc.frames_total();
+
+        let (sys_used, sys_used_unit) = crate::humanized_size(heap_used as u64);
+        let (sys_size, sys_size_unit) = crate::humanized_size(heap_size as u64);
+
+        output += format!(
+            "Kernel : {:>6.*} {} / {:>6.*} {} ({:>5.2}%)\n",
+            2,
+            sys_used,
+            sys_used_unit,
+            2,
+            sys_size,
+            sys_size_unit,
+            heap_used as f64 / heap_size as f64 * 100.0
+        )
+        .as_str();
+
+        let (user_used, user_used_unit) = crate::humanized_size(user_heap_used as u64);
+        let (user_size, user_size_unit) = crate::humanized_size(user_heap_size as u64);
+
+        output += format!(
+            "User   : {:>6.*} {} / {:>6.*} {} ({:>5.2}%)\n",
+            2,
+            user_used,
+            user_used_unit,
+            2,
+            user_size,
+            user_size_unit,
+            user_heap_used as f64 / user_heap_size as f64 * 100.0
+        )
+        .as_str();
+
+        // put used/total frames in MiB
+        let (used_size, used_unit) =
+            crate::humanized_size((frames_used - frames_recycled) as u64 * PAGE_SIZE);
+        let (tot_size, tot_unit) = crate::humanized_size(frames_total as u64 * PAGE_SIZE);
+
+        output += format!(
+            "Memory : {:>6.*} {} / {:>6.*} {} ({:>5.2}%) [{} recycled]\n",
+            2,
+            used_size,
+            used_unit,
+            2,
+            tot_size,
+            tot_unit,
+            (frames_used - frames_recycled) as f64 / frames_total as f64 * 100.0,
+            frames_recycled
+        )
+        .as_str();
+    
         output += format!("Queue  : {:?}\n", self.ready_queue.lock()).as_str();
 
         output += &processor::print_processors();

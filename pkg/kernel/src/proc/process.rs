@@ -83,7 +83,7 @@ impl Process {
             ret
         );
 
-        inner.kill(ret);
+        inner.kill(self.pid, ret);
     }
     // // from lab4, delete in lab5
     //
@@ -166,16 +166,49 @@ impl ProcessInner {
         self.parent.as_ref().and_then(|p| p.upgrade())
     }
 
-    pub fn kill(&mut self, ret: isize) {
+    pub fn kill(&mut self, pid: ProcessId, ret: isize) {
         // FIXME: set exit code
         self.exit_code = Some(ret);
         // FIXME: set status to dead
         self.status = ProgramStatus::Dead;
         // info!("{:?}",self.status);
         // FIXME: take and drop unused resources
+        self.clean_up_stack(pid);
         self.proc_data.take();
         self.page_table.take();
     }
+
+    fn clean_up_stack(&mut self, pid: ProcessId) {
+        let page_table = self.page_table.take().unwrap();
+        let mut mapper = page_table.mapper();
+
+        let frame_deallocator = &mut *get_frame_alloc_for_sure();
+        let start_count = frame_deallocator.recycled_count();
+
+        let proc_data = self.proc_data.as_mut().unwrap();
+        let stack = proc_data.stack_segment.unwrap();
+
+        debug!(
+            "Free stack for {}#{}: [{:#x} -> {:#x}) ({} frames)",
+            self.name,
+            pid,
+            stack.start.start_address(),
+            stack.end.start_address(),
+            stack.count()
+        );
+
+        elf::unmap_range(
+            stack.start.start_address().as_u64(),
+            stack.count() as u64,
+            &mut mapper,
+            frame_deallocator,
+            true,
+        )
+        .unwrap();
+
+    }
+
+
     pub fn set_stack_frame(&mut self, entry: VirtAddr, stack_top: VirtAddr){
         self.context.init_stack_frame(entry, stack_top);
     }

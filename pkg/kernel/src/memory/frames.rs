@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use boot::{MemoryMap, MemoryType};
 use x86_64::structures::paging::{FrameAllocator, FrameDeallocator, PhysFrame, Size4KiB};
 use x86_64::PhysAddr;
@@ -15,6 +16,7 @@ pub struct BootInfoFrameAllocator {
     size: usize,
     used: usize,
     frames: BootInfoFrameIter,
+    recycled: Vec<u32>,
 }
 
 impl BootInfoFrameAllocator {
@@ -28,6 +30,7 @@ impl BootInfoFrameAllocator {
             size,
             frames: create_frame_iter(memory_map),
             used: 0,
+            recycled: Vec::new(),
         }
     }
 
@@ -38,20 +41,49 @@ impl BootInfoFrameAllocator {
     pub fn frames_total(&self) -> usize {
         self.size
     }
+
+    pub fn recycled_count(&self) -> usize {
+        self.recycled.len() as usize
+    }
 }
 
 unsafe impl FrameAllocator<Size4KiB> for BootInfoFrameAllocator {
     fn allocate_frame(&mut self) -> Option<PhysFrame> {
-        self.used += 1;
-        self.frames.next()
+        if let Some(frame) = self.recycled.pop() {
+            Some(u32_to_phys_frame(frame))
+        } else {
+            self.used += 1;
+            self.frames.next()
+        }
     }
 }
 
 impl FrameDeallocator<Size4KiB> for BootInfoFrameAllocator {
-    unsafe fn deallocate_frame(&mut self, _frame: PhysFrame) {
+    unsafe fn deallocate_frame(&mut self, frame: PhysFrame) {
         // TODO: deallocate frame (not for lab 2)
+        let key = phys_frame_to_u32(frame);
+        self.recycled.push(key);
     }
 }
+
+const RS_ALIGN_4KIB: u64 = 12;
+
+/// Assumes that the physical memory we have is less than 16TB
+/// and we can store the 4KiB aligned address in a u32
+#[inline(always)]
+fn phys_frame_to_u32(frame: PhysFrame) -> u32 {
+    let key = frame.start_address().as_u64() >> RS_ALIGN_4KIB;
+
+    assert!(key <= u32::MAX as u64);
+
+    key as u32
+}
+
+#[inline(always)]
+fn u32_to_phys_frame(key: u32) -> PhysFrame {
+    PhysFrame::containing_address(PhysAddr::new((key as u64) << RS_ALIGN_4KIB))
+}
+
 
 unsafe fn create_frame_iter(memory_map: &MemoryMap) -> BootInfoFrameIter {
     memory_map

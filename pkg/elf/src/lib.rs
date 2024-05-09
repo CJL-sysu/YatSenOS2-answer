@@ -87,6 +87,47 @@ pub fn map_range(
     Ok(Page::range(range_start, range_end))
 }
 
+pub fn unmap_range(
+    addr: u64,
+    pages: u64,
+    page_table: &mut impl Mapper<Size4KiB>,
+    frame_deallocator: &mut impl FrameDeallocator<Size4KiB>,
+    do_dealloc: bool,
+) -> Result<(), UnmapError> {
+    trace!("Unmapping stack at {:#x}", addr);
+
+    let range_start = Page::containing_address(VirtAddr::new(addr));
+
+    trace!(
+        "Mem range hint: {:#x} -> {:#x}",
+        addr,
+        page_table
+            .translate_page(range_start)
+            .unwrap()
+            .start_address()
+    );
+
+    let range_end = range_start + pages;
+
+    trace!(
+        "Page Range: {:?}({})",
+        Page::range(range_start, range_end),
+        pages
+    );
+
+    for page in Page::range(range_start, range_end) {
+        let info = page_table.unmap(page)?;
+        if do_dealloc {
+            unsafe {
+                frame_deallocator.deallocate_frame(info.0);
+            }
+        }
+        info.1.flush();
+    }
+
+    Ok(())
+}
+
 /// Load & Map ELF file
 ///
 /// load segments in ELF file to new frames and set page table

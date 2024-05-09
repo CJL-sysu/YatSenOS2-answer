@@ -7,7 +7,11 @@ extern crate lib;
 
 fn main() -> isize {
     println!("before sleep");
+    let start = sys_time();
+    println!("{:#?}",start);
     sleep(2000);
+    let end = sys_time();
+    println!("{:#?}", end);
     println!("Hello, world!!!");
     print!("Please input a line:");
     let stdin1 = stdin();
