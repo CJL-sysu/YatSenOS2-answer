@@ -63,6 +63,9 @@ pub fn dispatcher(context: &mut ProcessContext) {
             context.set_rax(get_pid() as usize)
         },
 
+        Syscall::Fork => { /* FIXME: fork process */
+            sys_fork(context)
+        },
         // path: &str (ptr: arg0 as *const u8, len: arg1) -> pid: u16
         Syscall::Spawn => { /* FIXME: spawn process from name */
             context.set_rax(spawn_process(&args))

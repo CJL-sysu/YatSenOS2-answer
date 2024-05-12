@@ -115,3 +115,6 @@ pub fn wait_pid(args: &SyscallArgs)->usize{
 pub fn sys_clock() -> i64{
     clock::now().timestamp_nanos_opt().unwrap_or_default()
 }
+pub fn sys_fork(context: &mut ProcessContext){
+    proc::fork(context);
+}

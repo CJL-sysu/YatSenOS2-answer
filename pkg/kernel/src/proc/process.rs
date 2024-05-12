@@ -7,6 +7,8 @@ use x86_64::structures::paging::mapper::MapToError;
 use x86_64::structures::paging::page::PageRange;
 use x86_64::structures::paging::*;
 use elf::*;
+use core::intrinsics::copy_nonoverlapping;
+use core::arch::asm;
 #[derive(Clone)]
 pub struct Process {
     pid: ProcessId,
@@ -105,6 +107,29 @@ impl Process {
     //     VirtAddr::new(stack_top as u64)
     // }
     // 
+    pub fn fork(self: &Arc<Self>) -> Arc<Self> {
+        // FIXME: lock inner as write
+        let mut inner = self.inner.write();
+        // FIXME: inner fork with parent weak ref
+        let child_inner = inner.fork(Arc::downgrade(self));
+        let child_pid = ProcessId::new();
+        // FOR DBG: maybe print the child process info
+        //          e.g. parent, name, pid, etc.
+        debug!("fork: parrent is {}#{}, child is {}#{}.", inner.name, self.pid, child_inner.name, child_pid);
+        // FIXME: make the arc of child
+        let child = Arc::new(Self {
+            pid: child_pid,
+            inner: Arc::new(RwLock::new(child_inner)),
+        });
+        // FIXME: add child to current process's children list
+        inner.children.push(child.clone());
+        // FIXME: set fork ret value for parent with `context.set_rax`
+        inner.context.set_rax(child.pid.0 as usize);
+        
+        // FIXME: mark the child as ready & return it
+        inner.pause(); // !!!!!!!! actually, mark the parent as ready here
+        child
+    }
 }
 
 impl ProcessInner {
@@ -248,6 +273,84 @@ impl ProcessInner {
         //info!("stack segment: {:?}", stack_segment);
         self.proc_data.as_mut().unwrap().set_stack(VirtAddr::new(STACK_INIT_TOP), STACK_DEF_PAGE);
         self.proc_data.as_mut().unwrap().set_max_stack(VirtAddr::new(STACK_MAX - STACK_MAX_SIZE), STACK_MAX_PAGES);
+    }
+
+    pub fn fork(&mut self, parent: Weak<Process>) -> ProcessInner {
+        // FIXME: get current process's stack info
+        let stack_info = self.stack_segment.unwrap();
+        // FIXME: clone the process data struct
+        let child_proc_data = self.proc_data.clone().unwrap();
+        // FIXME: clone the page table context (see instructions)
+        let child_page_table = self.page_table.as_ref().unwrap().fork();
+        // FIXME: alloc & map new stack for child (see instructions)
+        let frame_allocator = &mut *get_frame_alloc_for_sure();
+        let mapper = &mut self.page_table.as_ref().unwrap().mapper();
+        let parent_stack_base = stack_info.start.start_address().as_u64();
+        let parent_stack_top = stack_info.end.start_address().as_u64();
+        let mut child_stack_base = parent_stack_base - (self.children.len() as u64 + 1)* STACK_MAX_SIZE;
+        while elf::map_range(child_stack_base, stack_info.count() as u64, mapper, frame_allocator, true, true).is_err(){
+            trace!("Map thread stack to {:#x} failed.", child_stack_base);
+            child_stack_base -= STACK_MAX_SIZE;
+        };
+        debug!("map child stack to {:#x} succeed", child_stack_base);
+        // FIXME: copy the *entire stack* from parent to child
+        ProcessInner::clone_range(parent_stack_base, child_stack_base, stack_info.count());
+        //debug!("finished clone range");
+        // FIXME: update child's context with new *stack pointer*
+        //          > update child's stack to new base
+        let mut child_context = self.context;
+        child_context.set_stack_offset(child_stack_base - parent_stack_base);
+        //          > keep lower bits of *rsp*, update the higher bits
+        // let mut old_rsp:u64 = 0;
+        // unsafe{
+        //     //寄存器rsp的值赋值给get_rsp
+        //     asm!("mov {}, rsp", out(reg) old_rsp);
+        // }
+        // let mut new_rsp = old_rsp - (parent_stack_base - child_stack_base);
+        // unsafe{
+        //     asm!("mov rsp, {}", in(reg) new_rsp);
+        // }
+        // debug!("update rsp from {:#x} to {:#x}",old_rsp, new_rsp);
+
+        //          > also update the stack record in process data
+        let mut child_proc_data = self.proc_data.clone().unwrap();
+        let child_stack_top = child_stack_base + stack_info.count() as u64 * Size4KiB::SIZE;
+        let child_stack = Page::range(
+            Page::containing_address(VirtAddr::new_truncate(child_stack_base)),
+            Page::containing_address(VirtAddr::new_truncate(child_stack_top))
+        );
+        child_proc_data.stack_segment = Some(child_stack);
+        child_proc_data.set_max_stack(VirtAddr::new(child_stack_top-STACK_MAX_SIZE), STACK_MAX_PAGES);
+        // FIXME: set the return value 0 for child with `context.set_rax`
+        child_context.set_rax(0);
+        // FIXME: construct the child process inner
+        Self { 
+            name: self.name.clone(),
+            parent: Some(parent),
+            children: Vec::new(), 
+            ticks_passed: 0,
+            status: ProgramStatus::Ready,
+            exit_code: None,
+            context: child_context,
+            page_table: Some(child_page_table),
+            proc_data: Some(child_proc_data) 
+        }
+        // NOTE: return inner because there's no pid record in inner
+    }
+    /// Clone a range of memory
+    ///
+    /// - `src_addr`: the address of the source memory
+    /// - `dest_addr`: the address of the target memory
+    /// - `size`: the count of pages to be cloned
+    fn clone_range(src_addr: u64, dest_addr: u64, size: usize) {
+        trace!("Clone range: {:#x} -> {:#x}", src_addr, dest_addr);
+        unsafe {
+            copy_nonoverlapping::<u8>(
+                src_addr as *mut u8,
+                dest_addr as *mut u8,
+                size * Size4KiB::SIZE as usize,
+            );
+        }
     }
 }
 

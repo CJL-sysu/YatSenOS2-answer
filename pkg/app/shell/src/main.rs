@@ -6,6 +6,9 @@ use lib::*;
 extern crate lib;
 
 fn main() -> isize {
+    // println!("To test the abilily to fork, YSOS will run app `fork` first");
+    // sys_wait_pid(sys_spawn("fork"));
+    // println!("Successfully exited app `fork`, YSOS will run shell next");
     loop {
         print!("[>] ");
         let line = stdin().read_line();
@@ -16,6 +19,7 @@ fn main() -> isize {
             "hello" => {sys_wait_pid(sys_spawn("hello"));},
             "fac" => {sys_wait_pid(sys_spawn("fac"));},
             "clear" => {print!("\x1b[2J\x1b[1;1H");},
+            "fork" => {sys_wait_pid(sys_spawn("fork"));},
             "help" => {print_help();},
             _ => println!("[=] {}", line),
         }
@@ -34,6 +38,7 @@ fn print_help(){
     - app: 展示所有用户程序
     - hello: 运行用户程序hello
     - fac: 运行用户程序fac, 用于计算阶乘
+    - fork: 运行用户程序fork, 测试fork的实现是否正确
     - clear: 清屏
     - help: 打印帮助信息\x1b[0m");
 }

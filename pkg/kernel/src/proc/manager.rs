@@ -9,6 +9,7 @@ use crate::memory::{
 use alloc::{boxed::Box, collections::*, format, sync::{Arc, Weak}};
 use boot::{AppList, AppListRef};
 use spin::{Mutex, RwLock, RwLockWriteGuard};
+use x86::current;
 
 pub static PROCESS_MANAGER: spin::Once<ProcessManager> = spin::Once::new();
 
@@ -290,5 +291,18 @@ impl ProcessManager {
         self.add_proc(pid, proc);
         self.push_ready(pid);
         pid
+    }
+
+    pub fn fork(&self) {
+        // FIXME: get current process
+        let current = self.current();
+        // FIXME: fork to get child
+        let child = current.fork();
+        // FIXME: add child to process list
+        let child_pid = child.pid();
+        self.add_proc(child_pid, child);
+        self.push_ready(child_pid);
+        // FOR DBG: maybe print the process ready queue?
+        debug!("Ready queue: {:?}", self.ready_queue.lock());
     }
 }
