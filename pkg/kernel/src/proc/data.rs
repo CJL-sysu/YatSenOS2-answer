@@ -6,6 +6,8 @@ use x86_64::structures::paging::{
 };
 use crate::resource::ResourceSet;
 
+use self::sync::{SemaphoreResult, SemaphoreSet};
+
 use super::*;
 
 #[derive(Debug, Clone)]
@@ -16,7 +18,8 @@ pub struct ProcessData {
     // process specific data
     pub(super) stack_segment: Option<PageRange>,
     pub(super) max_stack_segment: Option<PageRange>,
-    pub(super) resources: Arc<RwLock<ResourceSet>>
+    pub(super) resources: Arc<RwLock<ResourceSet>>,
+    pub(super) semaphores: Arc<RwLock<SemaphoreSet>>
 }
 
 impl Default for ProcessData {
@@ -26,6 +29,7 @@ impl Default for ProcessData {
             stack_segment: None,
             max_stack_segment: None,
             resources: Arc::new(RwLock::new(ResourceSet::default())),
+            semaphores: Arc::new(RwLock::new(SemaphoreSet::default()))
         }
     }
 }
@@ -92,5 +96,21 @@ impl ProcessData {
 
     pub fn write(&self, fd: u8, buf: &[u8]) -> isize {
         self.resources.write().write(fd, buf)
+    }
+
+    pub fn new_sem(&mut self, key:u32, value:usize) -> bool{
+        self.semaphores.write().insert(key, value)
+    }
+    
+    pub fn remove_sem(&mut self, key:u32) -> bool{
+        self.semaphores.write().remove(key)
+    }
+
+    pub fn sem_signal(&mut self, key:u32) -> SemaphoreResult{
+        self.semaphores.write().signal(key)
+    }
+
+    pub fn sem_wait(&mut self, key:u32, pid: ProcessId) -> SemaphoreResult{
+        self.semaphores.write().wait(key, pid)
     }
 }

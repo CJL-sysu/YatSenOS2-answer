@@ -43,6 +43,13 @@ impl Semaphore {
     pub fn wait(&mut self, pid: ProcessId) -> SemaphoreResult {
         // FIXME: if the count is 0, then push pid into the wait queue
         //          return Block(pid)
+        if self.count == 0 {
+            self.wait_queue.push_back(pid);
+            return SemaphoreResult::Block(pid);
+        }else{
+            self.count -= 1;
+            return SemaphoreResult::Ok;
+        }
         // FIXME: else decrease the count and return Ok
     }
 
@@ -55,6 +62,13 @@ impl Semaphore {
         //          pop a process from the wait queue
         //          return WakeUp(pid)
         // FIXME: else increase the count and return Ok
+        if !self.wait_queue.is_empty() {
+            let pid = self.wait_queue.pop_front().unwrap();
+            return SemaphoreResult::WakeUp(pid);
+        } else{
+            self.count += 1;
+            return SemaphoreResult::Ok;
+        }
     }
 }
 
@@ -69,6 +83,7 @@ impl SemaphoreSet {
 
         // FIXME: insert a new semaphore into the sems
         //          use `insert(/* ... */).is_none()`
+        self.sems.insert(SemaphoreId::new(key), Mutex::new(Semaphore::new(value))).is_none()
     }
 
     pub fn remove(&mut self, key: u32) -> bool {
@@ -76,6 +91,7 @@ impl SemaphoreSet {
 
         // FIXME: remove the semaphore from the sems
         //          use `remove(/* ... */).is_some()`
+        self.sems.remove(&SemaphoreId::new(key)).is_some()
     }
 
     /// Wait the semaphore (acquire/down/proberen)
@@ -84,6 +100,13 @@ impl SemaphoreSet {
 
         // FIXME: try get the semaphore from the sems
         //         then do it's operation
+        match self.sems.get(&sid) {
+            Some(sem) => {
+                let mut sem = sem.lock();
+                sem.wait(pid)
+            },
+            None => SemaphoreResult::NotExist,
+        }
         // FIXME: return NotExist if the semaphore is not exist
     }
 
@@ -93,6 +116,13 @@ impl SemaphoreSet {
 
         // FIXME: try get the semaphore from the sems
         //         then do it's operation
+        match self.sems.get(&sid) {
+            Some(sem)=>{
+                let mut sem = sem.lock();
+                sem.signal()
+            },
+            None => SemaphoreResult::NotExist,
+        }
         // FIXME: return NotExist if the semaphore is not exist
     }
 }

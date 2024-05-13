@@ -303,6 +303,19 @@ impl ProcessManager {
         self.add_proc(child_pid, child);
         self.push_ready(child_pid);
         // FOR DBG: maybe print the process ready queue?
-        debug!("Ready queue: {:?}", self.ready_queue.lock());
+        trace!("Ready queue: {:?}", self.ready_queue.lock());
+    }
+
+    pub fn wake_up(&self, pid: ProcessId) {
+        if let Some(process) = self.get_proc(&pid) {
+            process.write().pause();
+            self.push_ready(pid);
+        }
+    }
+
+    pub fn block(&self, pid: ProcessId) {
+        if let Some(process) = self.get_proc(&pid) {
+            process.write().block();
+        }
     }
 }

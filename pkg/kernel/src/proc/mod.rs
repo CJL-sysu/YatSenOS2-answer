@@ -5,6 +5,7 @@ mod paging;
 mod pid;
 mod process;
 mod processor;
+pub mod sync;
 
 use alloc::sync::Arc;
 use alloc::vec::Vec;
@@ -184,7 +185,7 @@ pub fn exit(ret: isize, context: &mut ProcessContext) {
 }
 #[inline]
 pub fn still_alive(pid: ProcessId) -> bool {
-    //x86_64::instructions::interrupts::without_interrupts(|| {
+    x86_64::instructions::interrupts::without_interrupts(|| {
         // check if the process is still alive
         let pid = get_process_manager().get_exit_code(&pid);
         if let None = pid {
@@ -192,7 +193,7 @@ pub fn still_alive(pid: ProcessId) -> bool {
         }else {
             false
         }
-    //})
+    })
 }
 
 pub fn fork(context: &mut ProcessContext) {

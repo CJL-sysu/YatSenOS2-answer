@@ -1,6 +1,10 @@
 use core::alloc::Layout;
 
 use crate::interrupt::clock;
+use crate::interrupt::new_sem;
+use crate::interrupt::remove_sem;
+use crate::interrupt::sem_signal;
+use crate::interrupt::sem_wait;
 use crate::proc;
 use crate::proc::*;
 use crate::utils::*;
@@ -117,4 +121,13 @@ pub fn sys_clock() -> i64{
 }
 pub fn sys_fork(context: &mut ProcessContext){
     proc::fork(context);
+}
+pub fn sys_sem(args: &SyscallArgs, context: &mut ProcessContext){
+    match args.arg0 {
+        0 => context.set_rax(new_sem(args.arg1 as u32, args.arg2)),
+        1 => context.set_rax(remove_sem(args.arg1 as u32)),
+        2 => sem_signal(args.arg1 as u32, context),
+        3 => sem_wait(args.arg1 as u32, context),
+        _ => context.set_rax(usize::MAX),
+    }
 }

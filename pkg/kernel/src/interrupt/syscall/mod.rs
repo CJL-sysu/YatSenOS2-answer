@@ -79,6 +79,9 @@ pub fn dispatcher(context: &mut ProcessContext) {
             context.set_rax(wait_pid(&args))
         },
 
+        Syscall::Sem => {
+            sys_sem(&args, context);
+        }
         Syscall::Time => {
             context.set_rax(sys_clock() as usize)
         },

@@ -92,3 +92,19 @@ pub fn sys_time() -> NaiveDateTime {
 pub fn sys_fork() -> u16 {
     syscall!(Syscall::Fork) as u16
 }
+#[inline(always)]
+pub fn sys_new_sem(key: u32, value: usize) -> usize {
+    syscall!(Syscall::Sem, 0, key, value)
+}
+#[inline(always)]
+pub fn sys_del_sem(key: u32) -> usize {
+    syscall!(Syscall::Sem, 1, key)
+}
+#[inline(always)]
+pub fn sys_signal(key: u32) -> usize{
+    syscall!(Syscall::Sem, 2, key)
+}
+#[inline(always)]
+pub fn sys_wait(key: u32) -> usize{
+    syscall!(Syscall::Sem, 3, key)
+}

@@ -20,6 +20,7 @@ fn main() -> isize {
             "fac" => {sys_wait_pid(sys_spawn("fac"));},
             "clear" => {print!("\x1b[2J\x1b[1;1H");},
             "fork" => {sys_wait_pid(sys_spawn("fork"));},
+            "counter" => {sys_wait_pid(sys_spawn("counter"));},
             "help" => {print_help();},
             _ => println!("[=] {}", line),
         }
@@ -39,6 +40,7 @@ fn print_help(){
     - hello: 运行用户程序hello
     - fac: 运行用户程序fac, 用于计算阶乘
     - fork: 运行用户程序fork, 测试fork的实现是否正确
+    - counter: 运行用户程序counter, 用于测试自旋锁和信号量
     - clear: 清屏
     - help: 打印帮助信息\x1b[0m");
 }
