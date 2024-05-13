@@ -216,7 +216,7 @@ impl ProcessInner {
         let proc_data = self.proc_data.as_mut().unwrap();
         let stack = proc_data.stack_segment.unwrap();
 
-        debug!(
+        trace!(
             "Free stack for {}#{}: [{:#x} -> {:#x}) ({} frames)",
             self.name,
             pid,
@@ -295,7 +295,7 @@ impl ProcessInner {
             trace!("Map thread stack to {:#x} failed.", child_stack_base);
             child_stack_base -= STACK_MAX_SIZE;
         };
-        debug!("map child stack to {:#x} succeed", child_stack_base);
+        trace!("map child stack to {:#x} succeed", child_stack_base);
         // FIXME: copy the *entire stack* from parent to child
         ProcessInner::clone_range(parent_stack_base, child_stack_base, stack_info.count());
         //debug!("finished clone range");

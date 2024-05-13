@@ -38,6 +38,11 @@ fn test_spin(){
 fn test_semaphore(){
     let mut pids = [0u16; THREAD_COUNT];
     let ret = SEMA.init(1);
+    if ret{
+        println!("semaphore init success");
+    }else{
+        println!("semaphore init failed");
+    }
     //print!("ret = {}", ret);
     for i in 0..THREAD_COUNT {
         let pid = sys_fork();
@@ -59,6 +64,12 @@ fn test_semaphore(){
     }
 
     println!("COUNTER result: {}", unsafe { COUNTER });
+    let ret = SEMA.remove();
+    if ret{
+        println!("semaphore remove success");
+    }else{
+        println!("semaphore remove failed");
+    }
 }
 
 fn main() -> isize {
