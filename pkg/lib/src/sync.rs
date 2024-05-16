@@ -67,6 +67,6 @@ unsafe impl Sync for Semaphore {}
 #[macro_export]
 macro_rules! semaphore_array {
     [$($x:expr),+ $(,)?] => {
-        [ $($crate::Semaphore::new($x),)* ]
+        [ $(Semaphore::new($x),)* ]
     }
 }
