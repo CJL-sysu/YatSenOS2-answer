@@ -109,12 +109,8 @@ pub fn get_pid() -> u16{
 pub fn service_list_app(){
     proc::list_app();
 }
-pub fn wait_pid(args: &SyscallArgs)->usize{
-    let res = get_process_manager().get_exit_code(&ProcessId(args.arg0 as u16));
-    match res {
-        Some(code) => code as usize,
-        None => 114514,
-    }
+pub fn wait_service_pid(args: &SyscallArgs, context: &mut ProcessContext){
+    proc::wait_pid(ProcessId(args.arg0.try_into().unwrap()), context)
 }
 pub fn sys_clock() -> i64{
     clock::now().timestamp_nanos_opt().unwrap_or_default()
