@@ -137,6 +137,10 @@ impl ProcessInner {
         &self.name
     }
 
+    pub fn set_rax(&mut self, rax: usize){
+        self.context.set_rax(rax);
+    }
+
     pub fn tick(&mut self) {
         self.ticks_passed += 1;
     }

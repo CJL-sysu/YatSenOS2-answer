@@ -32,6 +32,7 @@ pub struct ProcessManager {
     processes: RwLock<BTreeMap<ProcessId, Arc<Process>>>,
     ready_queue: Mutex<VecDeque<ProcessId>>,
     app_list: boot::AppListRef,
+    wait_queue: Mutex<BTreeMap<ProcessId, BTreeSet<ProcessId>>>,
 }
 
 impl ProcessManager {
@@ -50,6 +51,7 @@ impl ProcessManager {
             processes: RwLock::new(processes),
             ready_queue: Mutex::new(ready_queue),
             app_list: app_list,
+            wait_queue: BTreeMap::new().into(),
         }
     }
     pub fn get_exit_code(&self, pid: &ProcessId) -> Option<i32> {
@@ -174,7 +176,11 @@ impl ProcessManager {
             warn!("Process #{} not found.", pid);
             return;
         }
-
+        if let Some(pids) = self.wait_queue.lock().remove(&pid) {
+            for pid in pids {
+                self.wait_pid_wake_up(pid, Some(ret));
+            }
+        }
         let proc = proc.unwrap();
 
         if proc.read().status() == ProgramStatus::Dead {
@@ -316,6 +322,31 @@ impl ProcessManager {
     pub fn block(&self, pid: ProcessId) {
         if let Some(process) = self.get_proc(&pid) {
             process.write().block();
+        }
+    }
+
+    pub fn wait_pid(&self, pid: ProcessId) {
+        let mut wait_queue = self.wait_queue.lock();
+        // FIXME: push the current process to the wait queue
+        //        `processor::current_pid()` is waiting for `pid`
+        let k = wait_queue.entry(pid).or_insert(BTreeSet::new());
+        k.insert(self.current().pid());
+    }
+    /// Wake up the process with the given pid
+    ///
+    /// If `ret` is `Some`, set the return value of the process
+    pub fn wait_pid_wake_up(&self, pid: ProcessId, ret: Option<isize>) {
+        if let Some(proc) = self.get_proc(&pid) {
+            let mut inner = proc.write();
+            if let Some(ret) = ret {
+                // FIXME: set the return value of the process
+                //        like `context.set_rax(ret as usize)`
+                inner.set_rax(ret as usize);
+            }
+            // FIXME: set the process as ready
+            inner.pause();
+            // FIXME: push to ready queue
+            self.push_ready(pid);
         }
     }
 }
