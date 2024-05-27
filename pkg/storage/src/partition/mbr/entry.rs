@@ -27,14 +27,42 @@ impl MbrPartition {
     //
     //      0x02 - 0x03 begin sector & begin cylinder
     //      0x06 - 0x07 end sector & end cylinder
+    define_field!(u8, 0x00, status);
+    define_field!(u8, 0x01, begin_head);
+    // 0x02 - 0x03 begin sector & begin cylinder
+    define_field!(u8, 0x04, partition_type);
+    define_field!(u8, 0x05, end_head);
+    // 0x06 - 0x07 end sector & end cylinder
+    define_field!(u32, 0x08, begin_lba);
+    define_field!(u32, 0x0c, total_lba);
 
     // an example of how to define a field
     // move your mouse on the `define_field!` to see the docs
-    define_field!(u8, 0x00, status);
+    //define_field!(u8, 0x00, status);
 
     pub fn is_active(&self) -> bool {
-        self.status() == 0x80
+        self.status() & 0x80 != 0
     }
+
+    pub fn is_extended(&self) -> bool {
+        self.partition_type() == 0x05
+    }
+
+    pub fn begin_sector(&self) -> u8 {
+        self.data[2] & 0x3f
+    }
+    pub fn begin_cylinder(&self) -> u16 {
+        (self.data[2] as u16 & 0xc0) << 2 | (self.data[3] as u16)
+    }
+    pub fn end_sector(&self) -> u8 {
+        self.data[6] & 0x3f
+    }
+    pub fn end_cylinder(&self) -> u16 {
+        (self.data[6] as u16 & 0xc0) << 2 | (self.data[7] as u16)
+    }
+
+
+
 }
 
 impl core::fmt::Debug for MbrPartition {
