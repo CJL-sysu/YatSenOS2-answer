@@ -6,6 +6,7 @@
 
 use super::consts::*;
 use alloc::boxed::Box;
+use bit_field::BitField;
 use x86_64::instructions::port::*;
 
 #[derive(Debug, Clone)]
@@ -132,7 +133,7 @@ impl AtaBus {
     ///
     /// reference: https://wiki.osdev.org/ATA_PIO_Mode#28_bit_PIO
     fn write_command(&mut self, drive: u8, block: u32, cmd: AtaCommand) -> storage::Result<()> {
-        let bytes = block.to_le_bytes(); // a trick to convert u32 to [u8; 4]
+        let mut bytes = block.to_le_bytes(); // a trick to convert u32 to [u8; 4]
         unsafe {
             // just 1 sector for current implementation
             self.sector_count.write(1);
@@ -140,7 +141,18 @@ impl AtaBus {
             // FIXME: store the LBA28 address into four 8-bit registers
             //      - read the documentation for more information
             //      - enable LBA28 mode by setting the drive register
+            bytes[3].set_bit(4, drive > 0);
+            bytes[3].set_bit(5, true);
+            bytes[3].set_bit(6, true);
+            bytes[3].set_bit(7, true);
+            self.lba_low.write(bytes[0]);
+            self.lba_mid.write(bytes[1]);
+            self.lba_high.write(bytes[2]);
+            self.drive.write(drive);
+
             // FIXME: write the command register (cmd as u8)
+            self.command.write(cmd as u8);
+            
         }
 
         if self.status().is_empty() {
@@ -149,6 +161,8 @@ impl AtaBus {
         }
 
         // FIXME: poll for the status to be not BUSY
+        self.poll(AtaStatus::BUSY, false);
+
 
         if self.is_error() {
             warn!("ATA error: {:?} command error", cmd);
@@ -157,6 +171,7 @@ impl AtaBus {
         }
 
         // FIXME: poll for the status to be not BUSY and DATA_REQUEST_READY
+        self.poll(AtaStatus::BUSY | AtaStatus::DATA_REQUEST_READY, true);
 
         Ok(())
     }
@@ -171,8 +186,17 @@ impl AtaBus {
         //      - call `write_command` with `drive` and `0` as the block number
         //      - if the status is empty, return `AtaDeviceType::None`
         //      - else return `DeviceError::Unknown` as `FsError`
-
+        if self.write_command(drive, 0, AtaCommand::IdentifyDevice).is_err(){
+            unsafe{
+                if self.alternate_status.read() == 0{
+                    return Ok(AtaDeviceType::None);
+                }else{
+                    return Err(storage::DeviceError::UnknownDevice.into());
+                }
+            }
+        }
         // FIXME: poll for the status to be not BUSY
+        self.poll(AtaStatus::BUSY, false);
 
         Ok(match (self.cylinder_low(), self.cylinder_high()) {
             // we only support PATA drives

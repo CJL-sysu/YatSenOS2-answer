@@ -63,6 +63,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "248e3bacc7dc6baa3b21e405ee045c3047101a49145e7e9eca583ab4c2ca5345"
 
 [[package]]
+name = "hex-literal"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6fe2267d4ed49bc07b63801559be28c718ea06c4738b7a03c94df7386d2cde46"
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -487,6 +493,7 @@ dependencies = [
  "xmas-elf",
  "ysos_boot",
  "ysos_elf",
+ "ysos_storage",
  "ysos_syscall",
 ]
 
@@ -502,6 +509,19 @@ name = "ysos_shell"
 version = "0.1.0"
 dependencies = [
  "yslib",
+]
+
+[[package]]
+name = "ysos_storage"
+version = "0.6.0"
+dependencies = [
+ "bitflags 2.4.2",
+ "chrono",
+ "hex-literal",
+ "log",
+ "num_enum",
+ "paste",
+ "spin 0.9.8",
 ]
 
 [[package]]

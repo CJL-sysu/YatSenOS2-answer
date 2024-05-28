@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 
+use ata::AtaDrive;
 use log::debug;
 use log::info;
 use ysos::*;
@@ -15,6 +16,7 @@ pub fn kernel_main(boot_info: &'static boot::BootInfo) -> ! {
     ysos::init(boot_info);
     //syscall!(Syscall::Exit, 0);
     //syscall!(Syscall::Stat);
+    let s = AtaDrive::open(0, 0).unwrap();
     wait(spawn_init());
     ysos::shutdown(boot_info);
 }
