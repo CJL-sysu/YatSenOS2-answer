@@ -148,7 +148,7 @@ impl AtaBus {
             self.lba_low.write(bytes[0]);
             self.lba_mid.write(bytes[1]);
             self.lba_high.write(bytes[2]);
-            self.drive.write(drive);
+            self.drive.write(bytes[3]);
 
             // FIXME: write the command register (cmd as u8)
             self.command.write(cmd as u8);
@@ -225,6 +225,10 @@ impl AtaBus {
         //      - use `buf.chunks_mut(2)`
         //      - use `self.read_data()`
         //      - ! pay attention to data endianness
+        for chunk in buf.chunks_mut(2){
+            let data = self.read_data().to_le_bytes();
+            chunk.clone_from_slice(&data);
+        }
 
         if self.is_error() {
             debug!("ATA error: data read error");
@@ -246,7 +250,10 @@ impl AtaBus {
         //      - use `buf.chunks(2)`
         //      - use `self.write_data()`
         //      - ! pay attention to data endianness
-
+        for chunk in buf.chunks(2){
+            let data = u16::from_le_bytes(chunk.try_into().unwrap());
+            self.write_data(data);
+        }
         if self.is_error() {
             debug!("ATA error: data write error");
             self.debug();
