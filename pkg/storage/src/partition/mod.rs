@@ -26,8 +26,8 @@ where
     B: BlockTrait,
 {
     inner: T,
-    offset: usize,
-    size: usize,
+    pub offset: usize,
+    pub size: usize,
     _block: PhantomData<B>,
 }
 
@@ -74,7 +74,10 @@ where
         }
 
         // FIXME: calculate the block offset for inner device
+        //let block_offset = offset + self.
         // FIXME: read from the inner device
+        //Ok(())//to FIX
+        self.inner.read_block(offset + self.offset, block)
     }
 
     fn write_block(&self, offset: usize, block: &B) -> Result<()> {
@@ -84,5 +87,6 @@ where
 
         // FIXME: calculate the block offset for inner device
         // FIXME: write to the inner device
+        self.inner.write_block(offset + self.offset, block)
     }
 }
