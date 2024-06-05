@@ -6,7 +6,7 @@ pub fn init() {
 
     // FIXME: Configure the logger
     //设置最高输出等级为Trace，以便查看所有log的效果
-    log::set_max_level(LevelFilter::Debug);
+    log::set_max_level(LevelFilter::Info);
 
     info!("Logger Initialized.");
 }

@@ -69,6 +69,13 @@ fn run(s: &str) -> bool{
         println!("For example, `run hello` will start an app named `hello`");
         println!("You can view the app list with `app`");
         true
+    }else if v[0] == "ls"{
+        if v.len() == 1{
+            sys_list_dir("");
+        }else{
+            sys_list_dir(v[1]);
+        }
+        true
     }else{
         false
     }

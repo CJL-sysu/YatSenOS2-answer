@@ -2,6 +2,7 @@
 #![no_main]
 
 use ata::AtaDrive;
+use filesystem::ls;
 use log::debug;
 use log::info;
 use storage::mbr::MbrTable;
@@ -18,7 +19,8 @@ pub fn kernel_main(boot_info: &'static boot::BootInfo) -> ! {
     ysos::init(boot_info);
     //syscall!(Syscall::Exit, 0);
     //syscall!(Syscall::Stat);
-    open_drive();
+    //open_drive();
+    //ls("EFI/");
     wait(spawn_init());
     ysos::shutdown(boot_info);
 }

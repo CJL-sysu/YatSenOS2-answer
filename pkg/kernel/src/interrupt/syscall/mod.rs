@@ -85,6 +85,9 @@ pub fn dispatcher(context: &mut ProcessContext) {
         Syscall::Time => {
             context.set_rax(sys_clock() as usize)
         },
+        Syscall::ListDir => {
+            sys_list_dir(&args);
+        }
         // None
         Syscall::Stat => { /* FIXME: list processes */ 
             list_process()

@@ -127,3 +127,12 @@ pub fn sys_sem(args: &SyscallArgs, context: &mut ProcessContext){
         _ => context.set_rax(usize::MAX),
     }
 }
+pub fn sys_list_dir(args: &SyscallArgs){
+    let root = unsafe {
+        core::str::from_utf8_unchecked(core::slice::from_raw_parts(
+            args.arg0 as *const u8,
+            args.arg1,
+        ))
+    };
+    crate::drivers::filesystem::ls(root);
+}

@@ -42,6 +42,26 @@ impl Read for File {
         //      - use `self.handle.cluster_to_sector` to convert cluster to sector
         //      - update `self.offset` after reading
         //      - update `self.cluster` with FAT if necessary
+        if buf.len() < self.length() as usize {
+            warn!("buffer too small");
+            return Err(FsError::InvalidOperation);
+        }
+
+        let mut length = self.length() as usize;
+        let mut block = Block512::default();
+
+        for i in 0..=self.length() as usize / Block512::size() {
+            let sector = self.handle.cluster_to_sector(&self.entry.cluster);
+            self.handle.inner.read_block(sector + i, &mut block).unwrap();
+            if length > Block512::size() {
+                buf[i * Block512::size()..(i + 1) * Block512::size()].copy_from_slice(block.as_u8_slice());
+                length -= Block512::size();
+            } else {
+                buf[i * Block512::size()..i * Block512::size() + length].copy_from_slice(&block[..length]);
+                break;
+            }
+        }
+        Ok(self.length() as usize)
     }
 }
 
@@ -52,7 +72,7 @@ impl Seek for File {
     }
 }
 
-// NOTE: `Write` trait is not required for this lab
+// NOTE: `Write` trait{} is not required for this lab
 impl Write for File {
     fn write(&mut self, _buf: &[u8]) -> Result<usize> {
         unimplemented!()

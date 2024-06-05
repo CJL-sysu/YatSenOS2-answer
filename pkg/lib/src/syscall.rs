@@ -108,3 +108,7 @@ pub fn sys_signal(key: u32) -> usize{
 pub fn sys_wait(key: u32) -> usize{
     syscall!(Syscall::Sem, 3, key)
 }
+#[inline(always)]
+pub fn sys_list_dir(root: &str) {
+    syscall!(Syscall::ListDir, root.as_ptr() as u64, root.len() as u64);
+}
