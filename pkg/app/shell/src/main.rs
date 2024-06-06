@@ -2,15 +2,23 @@
 #![no_main]
 
 use lib::{vec::Vec, *};
-
+use string::String;
+mod mycd;
+mod myls;
+mod mycat;
 extern crate lib;
-
+static mut CUR_DIR:String = String::new();
 fn main() -> isize {
     // println!("To test the abilily to fork, YSOS will run app `fork` first");
     // sys_wait_pid(sys_spawn("fork"));
     // println!("Successfully exited app `fork`, YSOS will run shell next");
+    unsafe{
+        CUR_DIR = String::from("/");
+    }
     loop {
-        print!("[>] ");
+        print!("\x1b[32m\x1b[1mCJL@YSOS\x1b[0m:\x1b[34m\x1b[1m{}\x1b[0m# ", unsafe {
+            CUR_DIR.as_str()
+        });
         let line = stdin().read_line();
         match line.trim() {
             "exit" => break,
@@ -70,24 +78,32 @@ fn run(s: &str) -> bool{
         println!("You can view the app list with `app`");
         true
     }else if v[0] == "ls"{
+        let dist;
         if v.len() == 1{
-            sys_list_dir("");
+            unsafe{
+                dist = CUR_DIR.as_str();
+            }
         }else{
-            sys_list_dir(v[1]);
+            dist = v[1];
         }
+        myls::myls(dist);
         true
     }else if v[0] == "cat"{
         if v.len() == 1{
+            println!("Help: cat `the name of file`");
             false
         }else{
-            let mut buf = [0u8; 4096];
-            let len = sys_cat(v[1], &mut buf);
-            for i in 0..len{
-                print!("{}", buf[i] as char);
-            }
-            println!();
+            mycat::mycat(v[1]);
             true
         }
+    }else if v[0] == "cd"{
+        let target = if v.len() == 1{
+            "/"
+        }else{
+            v[1]
+        };
+        mycd::mycd(target);
+        true
     }else{
         false
     }

@@ -239,7 +239,7 @@ impl FileSystem for Fat16 {
 
     fn open_file(&self, path: &str) -> Result<FileHandle> {
         // FIXME: open file and return a file handle
-        info!("{}",path);
+        trace!("{}",path);
         let path = path.to_owned();
         let pos = path.rfind('/');
         let root;
