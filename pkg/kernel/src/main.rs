@@ -3,6 +3,8 @@
 
 use ata::AtaDrive;
 use filesystem::ls;
+use filesystem::read_file;
+use filesystem::try_get_file;
 use log::debug;
 use log::info;
 use storage::mbr::MbrTable;
@@ -21,6 +23,13 @@ pub fn kernel_main(boot_info: &'static boot::BootInfo) -> ! {
     //syscall!(Syscall::Stat);
     //open_drive();
     //ls("EFI/");
+    //try_get_file("/hello.txt");
+    let mut buf = [0u8; 4096];
+    
+    for i in 0..20{
+        print!("{}", buf[i] as char);
+    }
+    println!();
     wait(spawn_init());
     ysos::shutdown(boot_info);
 }

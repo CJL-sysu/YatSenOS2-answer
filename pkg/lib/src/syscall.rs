@@ -112,3 +112,7 @@ pub fn sys_wait(key: u32) -> usize{
 pub fn sys_list_dir(root: &str) {
     syscall!(Syscall::ListDir, root.as_ptr() as u64, root.len() as u64);
 }
+#[inline(always)]
+pub fn sys_cat(root: &str, buf: &mut [u8])-> usize {
+    syscall!(Syscall::Cat, root.as_ptr() as u64, root.len() as u64, buf.as_ptr() as u64)
+}

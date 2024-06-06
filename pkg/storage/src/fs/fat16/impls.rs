@@ -239,23 +239,30 @@ impl FileSystem for Fat16 {
 
     fn open_file(&self, path: &str) -> Result<FileHandle> {
         // FIXME: open file and return a file handle
+        info!("{}",path);
         let path = path.to_owned();
         let pos = path.rfind('/');
-
+        let root;
+        let filename;
         if pos.is_none() {
-            return Err(FsError::FileNotFound);
+            
+            root = fat16::Fat16Impl::root_dir();
+            filename = path.as_str();
+        }else
+        {  
+            let pos = pos.unwrap();
+
+            trace!("Root: {}, Filename: {}", &path[..=pos], &path[pos + 1..]);
+
+            let rootu = self.handle.resolve_path(&path[..=pos]);
+            filename = &path[pos + 1..];
+            if rootu.is_none() {
+                return Err(FsError::FileNotFound);
+            }
+            root = rootu.unwrap();
         }
-        let pos = pos.unwrap();
 
-        trace!("Root: {}, Filename: {}", &path[..=pos], &path[pos + 1..]);
-
-        let root = self.handle.resolve_path(&path[..=pos]);
-        let filename = &path[pos + 1..];
-
-        if root.is_none() {
-            return Err(FsError::FileNotFound);
-        }
-        let root = root.unwrap();
+        
 
         //
         trace!("Try open file: {}", filename);
@@ -274,8 +281,8 @@ impl FileSystem for Fat16 {
         let file = File::new(self.handle.clone(), dir_entry);
 
         trace!("Opened file: {:#?}", &file);
-
-        let file_handle = FileHandle::new(self.metadata(&path).unwrap(), Box::new(file));
+        //debug!("{:#?}",self.metadata(&path).unwrap());
+        let file_handle = FileHandle::new(self.metadata("APP/").unwrap(), Box::new(file));
         Ok(file_handle)
     }
 
@@ -284,6 +291,10 @@ impl FileSystem for Fat16 {
         let mut path = root_path.to_owned();
         let mut root = fat16::Fat16Impl::root_dir();
         let mut ret:Result<Metadata> = Err(FsError::FileNotFound);
+        // if path.rfind('/').is_none() {
+        //     ret = Ok((&root.entry.unwrap()).try_into().unwrap());
+        //     return ret;
+        // };
         while let Some(pos) = path.find('/') {
             let dir = path[..pos].to_owned();
 

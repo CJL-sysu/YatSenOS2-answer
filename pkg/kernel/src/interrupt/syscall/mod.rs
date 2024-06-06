@@ -88,6 +88,9 @@ pub fn dispatcher(context: &mut ProcessContext) {
         Syscall::ListDir => {
             sys_list_dir(&args);
         }
+        Syscall::Cat => {
+            sys_cat(&args);
+        }
         // None
         Syscall::Stat => { /* FIXME: list processes */ 
             list_process()

@@ -42,6 +42,7 @@ impl Read for File {
         //      - use `self.handle.cluster_to_sector` to convert cluster to sector
         //      - update `self.offset` after reading
         //      - update `self.cluster` with FAT if necessary
+        trace!("at read");
         if buf.len() < self.length() as usize {
             warn!("buffer too small");
             return Err(FsError::InvalidOperation);

@@ -19,6 +19,7 @@ pub enum Syscall {
     Sem = 66,
     Time = 201,
     ListDir = 114,
+    Cat = 514,
     ListApp = 65531,
     Stat = 65532,
     Allocate = 65533,

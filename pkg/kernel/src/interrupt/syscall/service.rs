@@ -1,5 +1,6 @@
 use core::alloc::Layout;
 
+use crate::filesystem::read_file;
 use crate::interrupt::clock;
 use crate::interrupt::new_sem;
 use crate::interrupt::remove_sem;
@@ -135,4 +136,24 @@ pub fn sys_list_dir(args: &SyscallArgs){
         ))
     };
     crate::drivers::filesystem::ls(root);
+}
+pub fn sys_cat(args: &SyscallArgs) -> usize{
+    let root = unsafe {
+        core::str::from_utf8_unchecked(core::slice::from_raw_parts(
+            args.arg0 as *const u8,
+            args.arg1,
+        ))
+    };
+    let mut buf;
+    unsafe{
+        buf = core::slice::from_raw_parts_mut(args.arg2 as *mut u8, 4096);
+    };
+    let ret = read_file(root, &mut buf);
+    match ret{
+        Ok(len) => len,
+        Err(e) => {
+            warn!("{:#?}",e);
+            0
+        }
+    }
 }

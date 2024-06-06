@@ -1,10 +1,14 @@
 use crate::humanized_size;
 
 use super::ata::*;
+use alloc::borrow::ToOwned;
 use alloc::boxed::Box;
 use alloc::format;
 use alloc::string::ToString;
 use chrono::DateTime;
+use fat16::directory::Directory;
+use fat16::direntry::Cluster;
+use fat16::file::{self, File};
 use storage::fat16::Fat16;
 use storage::mbr::*;
 use storage::*;
@@ -80,4 +84,26 @@ pub fn ls(root_path: &str) {
         let len = format!("{:.2}{:3}",size, units);
         println!("|{:16}|{:9}|{:10}|{:23}|{:23}|{:23}|", meta.name, entry_type, len, create_time, modified_time, accessed_time);
     }
+}
+
+pub fn try_get_file(path: &str) -> Result<FileHandle> {
+    get_rootfs().open_file(path)//FileHandle.file就是Box::new(file)
+}
+
+pub fn read_file(path: &str, buf: &mut [u8]) -> Result<usize> {
+    //info!("{}", path);
+    let file = try_get_file(path);
+    //info!("file: {:#?}", file);
+    let mut file = match file{
+        Ok(file) => file,
+        Err(err) => {
+            warn!("{:?}", err);
+            return Err(err);
+        }
+    };
+    //info!("before read");
+    let ret = file.read(buf);
+    // info!("after read");
+    // info!("{:#?}",ret);
+    ret
 }

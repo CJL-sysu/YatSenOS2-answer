@@ -76,6 +76,18 @@ fn run(s: &str) -> bool{
             sys_list_dir(v[1]);
         }
         true
+    }else if v[0] == "cat"{
+        if v.len() == 1{
+            false
+        }else{
+            let mut buf = [0u8; 4096];
+            let len = sys_cat(v[1], &mut buf);
+            for i in 0..len{
+                print!("{}", buf[i] as char);
+            }
+            println!();
+            true
+        }
     }else{
         false
     }
