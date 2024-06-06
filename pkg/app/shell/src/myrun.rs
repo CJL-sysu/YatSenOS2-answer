@@ -4,6 +4,9 @@ use mycd::get_path;
 use crate::mycd;
 
 pub fn myrun(dist: &str){
+    if dist.len() == 0{
+        return;
+    }
     let path:String = get_path(&dist.to_string());
     let pid = sys_spawn_file(path.as_str());
     //println!("{}",pid);
