@@ -116,3 +116,7 @@ pub fn sys_list_dir(root: &str) {
 pub fn sys_cat(root: &str, buf: &mut [u8])-> usize {
     syscall!(Syscall::Cat, root.as_ptr() as u64, root.len() as u64, buf.as_ptr() as u64)
 }
+#[inline(always)]
+pub fn sys_spawn_file(path: &str) -> u16 {
+    syscall!(Syscall::SpawnFile, path.as_ptr() as u64, path.len() as u64) as u16
+}

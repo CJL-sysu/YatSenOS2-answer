@@ -12,6 +12,7 @@ use alloc::vec::Vec;
 pub use manager::*;
 use process::*;
 use x86_64::structures::paging::PageTable;
+use crate::filesystem::read_all_file;
 use crate::memory::PAGE_SIZE;
 use xmas_elf::ElfFile;
 use alloc::string::{String, ToString};
@@ -151,6 +152,22 @@ pub fn spawn(name: &str) -> Option<ProcessId> {
     })?;
 
     elf_spawn(name.to_string(), &app.elf)
+}
+
+pub fn spawn_from_file(path: &str) -> Option<ProcessId> {
+    let buf = match read_all_file(path){
+        Ok(buf) => buf,
+        Err(_) => return None
+    };
+    let elf = match xmas_elf::ElfFile::new(&buf){
+        Ok(elf) => elf,
+        Err(_) => return None
+    };
+    let name = match path.rfind("/"){
+        Some(pos) => &path[pos+1..],
+        None => path
+    };
+    elf_spawn(name.to_string(), &elf)
 }
 
 pub fn elf_spawn(name: String, elf: &ElfFile) -> Option<ProcessId> {

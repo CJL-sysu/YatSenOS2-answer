@@ -64,6 +64,29 @@ impl Read for File {
         }
         Ok(self.length() as usize)
     }
+    fn read_all(&mut self, buf: &mut Vec<u8>) -> Result<usize> {
+        // FIXME: read data into the buffer
+        //      - extend the buffer if it's not big enough
+        //      - break if the read returns 0 or Err
+        //      - update the length of the buffer if data was read
+        //let mut data = vec![0u8; self.length() as usize];
+        buf.resize(self.length(), 0u8);
+        let mut length = self.length() as usize;
+        let mut block = Block512::default();
+
+        for i in 0..=self.length() as usize / Block512::size() {
+            let sector = self.handle.cluster_to_sector(&self.entry.cluster);
+            self.handle.inner.read_block(sector + i, &mut block).unwrap();
+            if length > Block512::size() {
+                buf[i * Block512::size()..(i + 1) * Block512::size()].copy_from_slice(block.as_u8_slice());
+                length -= Block512::size();
+            } else {
+                buf[i * Block512::size()..i * Block512::size() + length].copy_from_slice(&block[..length]);
+                break;
+            }
+        }
+        Ok(buf.len())
+    }
 }
 
 // NOTE: `Seek` trait is not required for this lab

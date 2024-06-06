@@ -157,3 +157,19 @@ pub fn sys_cat(args: &SyscallArgs) -> usize{
         }
     }
 }
+pub fn sys_spawn_file(args: &SyscallArgs) -> usize{
+    let buf: &[u8];
+    unsafe{
+        buf = core::slice::from_raw_parts(args.arg0 as *const u8, args.arg1 as usize);
+    }
+    let path;
+    unsafe {
+        path = core::str::from_utf8_unchecked(buf);
+    };
+    //debug!("name is {}",name);
+    let res = proc::spawn_from_file(path);
+    match res {
+        Some(pid) => pid.0 as usize,
+        None => 0,
+    }
+}

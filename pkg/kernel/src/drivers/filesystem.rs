@@ -5,6 +5,7 @@ use alloc::borrow::ToOwned;
 use alloc::boxed::Box;
 use alloc::format;
 use alloc::string::ToString;
+use alloc::vec::Vec;
 use chrono::DateTime;
 use fat16::directory::Directory;
 use fat16::direntry::Cluster;
@@ -106,4 +107,11 @@ pub fn read_file(path: &str, buf: &mut [u8]) -> Result<usize> {
     // info!("after read");
     // info!("{:#?}",ret);
     ret
+}
+
+pub fn read_all_file(path: &str) -> Result<Vec<u8>> {
+    let mut file = try_get_file(path)?;
+    let mut buf = Vec::new();
+    file.read_all(&mut buf)?;
+    Ok(buf)
 }

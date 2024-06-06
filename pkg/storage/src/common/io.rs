@@ -7,15 +7,7 @@ pub trait Read {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize>;
 
     /// Read all bytes until EOF in this source, placing them into `buf`.
-    fn read_all(&mut self, buf: &mut Vec<u8>) -> Result<usize> {
-        let mut start_len = buf.len();
-        loop {
-            // FIXME: read data into the buffer
-            //      - extend the buffer if it's not big enough
-            //      - break if the read returns 0 or Err
-            //      - update the length of the buffer if data was read
-        }
-    }
+    fn read_all(&mut self, buf: &mut Vec<u8>) -> Result<usize>;
 }
 
 /// The `Write` trait allows for writing bytes to a source.

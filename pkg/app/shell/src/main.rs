@@ -6,6 +6,7 @@ use string::String;
 mod mycd;
 mod myls;
 mod mycat;
+mod myrun;
 extern crate lib;
 static mut CUR_DIR:String = String::new();
 fn main() -> isize {
@@ -33,7 +34,7 @@ fn main() -> isize {
             "help" => {print_help();},
             _ =>{
                 if !run(line.trim()){
-                    println!("[=] {}", line);
+                    myrun::myrun(line.trim());
                 }
             },
         }
@@ -52,7 +53,10 @@ fn print_help(){
     - app: 展示所有用户程序
     - run: 运行用户程序
     - clear: 清屏
-    - help: 打印帮助信息\x1b[0m");
+    - help: 打印帮助信息
+    - cd: 切换文件夹
+    - cat: 查看文件内容
+    - ls: 列出文件夹下文件\x1b[0m");
 }
 
 fn run(s: &str) -> bool{

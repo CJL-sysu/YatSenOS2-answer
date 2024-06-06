@@ -3,6 +3,7 @@
 
 use ata::AtaDrive;
 use filesystem::ls;
+use filesystem::read_all_file;
 use filesystem::read_file;
 use filesystem::try_get_file;
 use log::debug;
@@ -19,17 +20,17 @@ boot::entry_point!(kernel_main);
 
 pub fn kernel_main(boot_info: &'static boot::BootInfo) -> ! {
     ysos::init(boot_info);
-    //syscall!(Syscall::Exit, 0);
-    //syscall!(Syscall::Stat);
-    //open_drive();
-    //ls("EFI/");
     //try_get_file("/hello.txt");
-    let mut buf = [0u8; 4096];
-    
-    for i in 0..20{
-        print!("{}", buf[i] as char);
-    }
-    println!();
+    //println!("{:#?}",read_all_file("/hello.txt"));
+    // let buf = read_all_file("/hello.txt").unwrap();
+    // for x in &buf{
+    //     print!("{},", x);
+    // }
+    // println!();
+    // for x in &buf{
+    //     print!("{}", *x as char);
+    // }
+    // println!();
     wait(spawn_init());
     ysos::shutdown(boot_info);
 }

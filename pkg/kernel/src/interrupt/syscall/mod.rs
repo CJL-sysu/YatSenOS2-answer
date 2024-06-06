@@ -91,6 +91,9 @@ pub fn dispatcher(context: &mut ProcessContext) {
         Syscall::Cat => {
             sys_cat(&args);
         }
+        Syscall::SpawnFile => {
+            context.set_rax(sys_spawn_file(&args));
+        }
         // None
         Syscall::Stat => { /* FIXME: list processes */ 
             list_process()
