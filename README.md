@@ -10,11 +10,17 @@
 
 ## 启动YSOS
 
+经过测试，可在 windows, linux 上运行
+
+linux 环境配置参照 https://ysos.gzti.me/wiki/linux/
+
+windows 环境配置参照 https://ysos.gzti.me/wiki/windows/
+
 ```bash
-# 使用 make
+# 推荐使用 ysos.py 启动
+python ./ysos.py run
+# 或使用 make 启动（在有的设备上可能不支持）
 make run
-# 或使用 ysos.py
-./ysos.py run
 ```
 
 进入YSOS后可用 `help` 指令查看所支持的功能
