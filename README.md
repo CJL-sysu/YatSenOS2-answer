@@ -8,6 +8,10 @@
 
 参考GGOS: https://github.com/GZTimeWalker/GGOS
 
+## 实验报告
+
+https://blog.algorithmpark.xyz/2024/05/14/YSOS/index/
+
 ## 启动YSOS
 
 经过测试，可在 windows, linux 上运行
